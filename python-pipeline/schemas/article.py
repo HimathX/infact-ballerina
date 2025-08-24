@@ -8,6 +8,7 @@ class Article(BaseModel):
     source: Optional[str] = Field(None, description="Article source")
     published_at: Optional[datetime] = Field(None, description="Publication timestamp")
     url: Optional[str] = Field(None, description="Article URL")
+    image_url: Optional[str] = Field(None, description="Article image URL")
 
 
 class ArticleResponse(BaseModel):
@@ -17,6 +18,7 @@ class ArticleResponse(BaseModel):
     musings: List[str]
     cluster_id: int
     cluster_name: str
+    image_url: Optional[str] = Field(None, description="Article image URL")
 
 class ProcessingRequest(BaseModel):
     articles: List[Article] = Field(..., description="List of articles to process")

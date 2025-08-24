@@ -384,6 +384,39 @@ class RSSExtractor:
                         if not author and fallback_author:
                             author = fallback_author
                     
+                    # Extract image URL
+                    image_url = None
+                    
+                    # Try different common RSS image fields
+                    if hasattr(entry, 'media_content') and entry.media_content:
+                        media = entry.media_content[0]
+                        if isinstance(media, dict) and 'url' in media:
+                            image_url = media['url']
+                    elif hasattr(entry, 'enclosures') and entry.enclosures:
+                        for enclosure in entry.enclosures:
+                            if hasattr(enclosure, 'type') and isinstance(enclosure.type, str) and enclosure.type.startswith('image/'):
+                                image_url = enclosure.href
+                                break
+                    elif hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+                        if isinstance(entry.media_thumbnail[0], dict) and 'url' in entry.media_thumbnail[0]:
+                            image_url = entry.media_thumbnail[0]['url']
+                    elif hasattr(entry, 'image') and entry.image:
+                        if isinstance(entry.image, dict):
+                            image_url = entry.image.get('href') or entry.image.get('url')
+
+                    # Try to extract image from newspaper3k if available and no image found
+                    if not image_url and fetch_full_content and NEWSPAPER_AVAILABLE and article_url:
+                        try:
+                            from newspaper import Article
+                            article = Article(article_url)
+                            article.download()
+                            article.parse()
+                            if article.top_image:
+                                image_url = article.top_image
+                        except Exception as e:
+                            if verbose:
+                                logger.warning(f"Failed to extract image using newspaper3k: {str(e)}")
+
                     # Create article object
                     article = {
                         "title": title,
@@ -391,7 +424,8 @@ class RSSExtractor:
                         "url": article_url,
                         "published_date": pub_date,
                         "author": author,
-                        "tags": tags
+                        "tags": tags,
+                        "image_url": image_url  # Add the new field
                     }
                     
                     articles.append(article)

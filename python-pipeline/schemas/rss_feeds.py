@@ -72,18 +72,8 @@ class RSSExtractionResponse(BaseModel):
     """
     Response model for RSS feed extraction
     """
-    success: bool = Field(..., description="Whether the extraction was successful")
-    message: str = Field(..., description="Status message")
-    articles: List[Article] = Field(..., description="Extracted articles")
     total_articles: int = Field(..., description="Total number of articles extracted")
-    extraction_time: Optional[datetime] = Field(default=None, description="When extraction completed")
-    stats: Optional[Dict[str, Any]] = Field(default=None, description="Extraction statistics")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
-
 class ExtractionStatus(BaseModel):
     """
     Status model for async extraction tasks

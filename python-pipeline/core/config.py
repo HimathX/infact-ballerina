@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # API Configuration
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Ground News API"
+    PROJECT_NAME: str = "Infact"
     
     # AI Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

@@ -11,7 +11,7 @@ db = client["infact_db"]
 # Collections
 article_collection = db["articles"]  
 clusters_collection = db["clusters"]
-fact_checks_collection = db["fact_checks"]
+subscribers_collection = db["subscribers"]
 
 # Check if connection is successful
 try:
