@@ -33,3 +33,4 @@ class ClusterResult(BaseModel):
     musings: List[str]
     generated_article: str
     similarity_scores: List[float]
+    image_url: Optional[str] = Field(None, description="Cluster representative image URL")

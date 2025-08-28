@@ -6,10 +6,10 @@ uri = "mongodb+srv://himathnimpura:himathavenge@cluster0.bjaku.mongodb.net/User_
 
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
-db = client["infact_db"]  
+db = client["newsstore"]  
 
 # Collections
-article_collection = db["articles"]  
+article_collection = db["news"]  
 clusters_collection = db["clusters"]
 subscribers_collection = db["subscribers"]
 

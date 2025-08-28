@@ -243,7 +243,7 @@ async def scrape_process_and_store(
         
         # Get recent articles from database
         cursor = article_collection.find(query).limit(max_articles).sort("published_at", -1)
-
+        
         # Convert to Article objects
         scraped_articles = []
         for doc in cursor:
@@ -255,17 +255,40 @@ async def scrape_process_and_store(
                     content=doc.get('content', ''),
                     source=doc.get('source'),
                     published_at=published_at,
-                    url=doc.get('url')
+                    url=doc.get('url'),
+                    image_url=doc.get('image_url')
                 )
                 scraped_articles.append(article)
             except Exception as e:
                 logger.warning(f"Failed to convert document to Article: {str(e)}")
                 continue
         
+        # If no recent articles found, try without date filter
+        if not scraped_articles:
+            logger.warning(f"No articles found in the last {days_back} days, trying all articles")
+            cursor = article_collection.find({}).limit(max_articles).sort("_id", -1)
+            
+            for doc in cursor:
+                try:
+                    published_at = doc.get('published_at')
+                    
+                    article = Article(
+                        title=doc.get('title', ''),
+                        content=doc.get('content', ''),
+                        source=doc.get('source'),
+                        published_at=published_at,
+                        url=doc.get('url'),
+                        image_url=doc.get('image_url')
+                    )
+                    scraped_articles.append(article)
+                except Exception as e:
+                    logger.warning(f"Failed to convert document to Article: {str(e)}")
+                    continue
+        
         if not scraped_articles:
             raise HTTPException(
                 status_code=404, 
-                detail=f"No articles found in the last {days_back} days"
+                detail="No articles found in database"
             )
         
         if len(scraped_articles) < 2:

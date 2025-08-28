@@ -9,6 +9,8 @@ from schemas.article import Article, ClusterResult
 from .clustering import ArticleClusterer
 from .fact_extractor import FactExtractor
 from .ai_generator import AIGenerator
+from utils.image_service import ImageService
+
 
 class ClusteringResult:
     def __init__(self, clusters, cluster_names, n_clusters, embeddings_2d, cluster_sizes):
@@ -25,6 +27,7 @@ class NLPProcessor:
         self.clusterer = None
         self.fact_extractor = None
         self.ai_generator = None
+        self.image_service = None
         self.initialized = False
 
     async def initialize(self):
@@ -49,6 +52,7 @@ class NLPProcessor:
         self.clusterer = ArticleClusterer(self.sentence_model)
         self.fact_extractor = FactExtractor(self.nlp)
         self.ai_generator = AIGenerator()
+        self.image_service = ImageService()
         
         self.initialized = True
 
@@ -133,7 +137,7 @@ class NLPProcessor:
         articles: List[Article], 
         n_clusters: Optional[int] = None
     ) -> List[ClusterResult]:
-        """Complete processing pipeline"""
+        """Complete processing pipeline with image URL assignment"""
         # Step 1: Cluster articles
         clustering_result = await self.cluster_articles(articles, n_clusters)
         
@@ -159,20 +163,31 @@ class NLPProcessor:
             )
             
             # Generate article
+            cluster_name = clustering_result.cluster_names.get(cluster_id, f"Cluster {cluster_id}")
             generated_article = await self.ai_generator.generate_article( #type:ignore
                 merged_facts,
                 extraction_result["musings"],
-                clustering_result.cluster_names.get(cluster_id, f"Cluster {cluster_id}")
+                cluster_name
             )
+            
+            # Get image URL for cluster
+            # Get image URL for cluster
+            cluster_image_url = None
+            if self.image_service:
+                cluster_image_url = self.image_service.get_cluster_image_url(
+                    cluster_articles, 
+                    cluster_name
+                )
             
             cluster_result = ClusterResult(
                 cluster_id=cluster_id,
-                cluster_name=clustering_result.cluster_names.get(cluster_id, f"Cluster {cluster_id}"),
+                cluster_name=cluster_name,
                 articles_count=len(cluster_articles),
                 facts=merged_facts[:settings.MAX_FACTS_PER_CLUSTER],
                 musings=extraction_result["musings"][:settings.MAX_MUSINGS_PER_CLUSTER],
                 generated_article=generated_article,
-                similarity_scores=similarity_scores
+                similarity_scores=similarity_scores,
+                image_url=cluster_image_url  # Add image URL to cluster
             )
             
             cluster_results.append(cluster_result)

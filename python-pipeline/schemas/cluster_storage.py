@@ -18,6 +18,7 @@ class StoredCluster(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
     article_ids: List[str] = Field(default=[], description="IDs of articles in this cluster")
+    image_url: Optional[str] = Field(None, description="Representative image URL for the cluster")
     
 class ClusterStorageRequest(BaseModel):
     """Request model for storing clusters"""
