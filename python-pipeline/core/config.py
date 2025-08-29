@@ -1,5 +1,5 @@
-import os
 from pydantic_settings import BaseSettings
+import os
 
 class Settings(BaseSettings):
     # API Configuration
@@ -14,18 +14,18 @@ class Settings(BaseSettings):
     # Processing Configuration
     MAX_ARTICLES_PER_REQUEST: int = 50
     DEFAULT_CLUSTERS: int = 7
-    MAX_CLUSTERS: int = 15
     MIN_CLUSTERS: int = 3
-    EMBEDDING_BATCH_SIZE: int = 32
-    MAX_FACTS_PER_CLUSTER: int = 10
-    MAX_MUSINGS_PER_CLUSTER: int = 5
-    SIMILARITY_THRESHOLD: float = 0.7
+    MAX_CLUSTERS: int = 15
     
-    # Performance Configuration
-    USE_GPU: bool = True
-    MAX_TEXT_LENGTH: int = 1000000
+    # New settings needed by nlp_processor
+    USE_GPU: bool = False  # Set to True if you want to use GPU
+    MAX_TEXT_LENGTH: int = 5000  # Maximum text length for processing
+    EMBEDDING_BATCH_SIZE: int = 32  # Batch size for embeddings
     
-    class Config:
-        env_file = ".env"
+    # Content limits
+    MAX_FACTS_PER_CLUSTER: int = 15
+    MAX_MUSINGS_PER_CLUSTER: int = 10
+    MAX_CONTEXT_PER_CLUSTER: int = 10
+    MAX_BACKGROUND_PER_CLUSTER: int = 10
 
 settings = Settings()

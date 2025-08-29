@@ -1,8 +1,8 @@
 import asyncio
-import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
-import spacy
 from sentence_transformers import SentenceTransformer
+import numpy as np
+import spacy
 import torch
 from core.config import settings
 from schemas.article import Article, ClusterResult
@@ -111,24 +111,32 @@ class NLPProcessor:
         return np.array(embeddings)
 
     async def extract_facts_and_musings(self, articles: List[Article]) -> Dict[str, Any]:
-        """Extract facts and musings from articles"""
+        """Extract facts, musings, context, and background from articles"""
         all_facts = []
         all_musings = []
+        all_context = []
+        all_background = []
         
         for article in articles:
             text = f"{article.title} {article.content}"
-            facts, musings = self.fact_extractor.extract(text) #type:ignore
+            facts, musings, context, background = self.fact_extractor.extract(text) #type:ignore
             all_facts.extend(facts)
             all_musings.extend(musings)
+            all_context.extend(context)
+            all_background.extend(background)
         
         return {
             "facts": all_facts,
             "musings": all_musings,
+            "context": all_context,
+            "background": all_background,
             "stats": {
                 "total_facts": len(all_facts),
                 "total_musings": len(all_musings),
+                "total_context": len(all_context),
+                "total_background": len(all_background),
                 "avg_facts_per_article": len(all_facts) / len(articles) if articles else 0,
-                "avg_musings_per_article": len(all_musings) / len(articles) if articles else 0
+                "avg_context_per_article": len(all_context) / len(articles) if articles else 0
             }
         }
 
@@ -137,7 +145,7 @@ class NLPProcessor:
         articles: List[Article], 
         n_clusters: Optional[int] = None
     ) -> List[ClusterResult]:
-        """Complete processing pipeline with image URL assignment"""
+        """Complete processing pipeline with context and background"""
         # Step 1: Cluster articles
         clustering_result = await self.cluster_articles(articles, n_clusters)
         
@@ -154,7 +162,25 @@ class NLPProcessor:
             if not cluster_articles:
                 continue
             
-            # Extract facts and musings for this cluster
+            # Extract sources and URLs from cluster articles
+            sources = []
+            article_urls = []
+            source_counts = {}
+            
+            for article in cluster_articles:
+                # Collect sources
+                if article.source:
+                    sources.append(article.source)
+                    source_counts[article.source] = source_counts.get(article.source, 0) + 1
+                
+                # Collect URLs
+                if article.url:
+                    article_urls.append(article.url)
+            
+            # Remove duplicate sources while preserving order
+            unique_sources = list(dict.fromkeys(sources))
+            
+            # Extract facts, musings, context, and background
             extraction_result = await self.extract_facts_and_musings(cluster_articles)
             
             # Deduplicate facts
@@ -162,21 +188,41 @@ class NLPProcessor:
                 extraction_result["facts"]
             )
             
+            # Deduplicate context and background lists
+            merged_context_items = self._deduplicate_list(extraction_result["context"])
+            merged_background_items = self._deduplicate_list(extraction_result["background"])
+            
             # Generate article
             cluster_name = clustering_result.cluster_names.get(cluster_id, f"Cluster {cluster_id}")
-            generated_article = await self.ai_generator.generate_article( #type:ignore
-                merged_facts,
-                extraction_result["musings"],
-                cluster_name
+            
+            # Generate different types of content
+            factual_summary = await self.ai_generator.generate_factual_summary( #type:ignore
+                merged_facts, cluster_name
             )
             
-            # Get image URL for cluster
+            # Generate context and background paragraphs
+            context_paragraph = await self.ai_generator.generate_context_paragraph( #type:ignore
+                merged_context_items, cluster_name
+            )
+            
+            background_paragraph = await self.ai_generator.generate_background_paragraph( #type:ignore
+                merged_background_items, cluster_name
+            )
+            
+            contextual_analysis = await self.ai_generator.generate_contextual_analysis( #type:ignore
+                merged_context_items, merged_background_items, cluster_name
+            )
+            
+            comprehensive_article = await self.ai_generator.generate_comprehensive_article( #type:ignore
+                merged_facts, extraction_result["musings"], 
+                merged_context_items, merged_background_items, cluster_name
+            )
+            
             # Get image URL for cluster
             cluster_image_url = None
             if self.image_service:
                 cluster_image_url = self.image_service.get_cluster_image_url(
-                    cluster_articles, 
-                    cluster_name
+                    cluster_articles, cluster_name
                 )
             
             cluster_result = ClusterResult(
@@ -185,11 +231,30 @@ class NLPProcessor:
                 articles_count=len(cluster_articles),
                 facts=merged_facts[:settings.MAX_FACTS_PER_CLUSTER],
                 musings=extraction_result["musings"][:settings.MAX_MUSINGS_PER_CLUSTER],
-                generated_article=generated_article,
+                context=context_paragraph,
+                background=background_paragraph,
+                generated_article=comprehensive_article,
+                factual_summary=factual_summary,
+                contextual_analysis=contextual_analysis,
                 similarity_scores=similarity_scores,
-                image_url=cluster_image_url  # Add image URL to cluster
+                image_url=cluster_image_url,
+                sources=unique_sources,  # Add sources
+                article_urls=article_urls,  # Add URLs
+                source_counts=source_counts  # Add source counts
             )
             
             cluster_results.append(cluster_result)
         
         return cluster_results
+        
+        return cluster_results
+    
+    def _deduplicate_list(self, items: List[str]) -> List[str]:
+        """Remove duplicate items while preserving order"""
+        seen = set()
+        result = []
+        for item in items:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+        return result

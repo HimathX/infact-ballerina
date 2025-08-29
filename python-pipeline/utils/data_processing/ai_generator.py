@@ -1,92 +1,176 @@
 import google.generativeai as genai
-from typing import List
+from typing import List, Dict, Any
 import os
-from core.config import settings
-import asyncio
 
 class AIGenerator:
     def __init__(self):
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            self.model = genai.GenerativeModel('gemini-1.5-flash') 
-            self.configured = True
-        else:
-            self.model = None
-            self.configured = False
-            print("Warning: GEMINI_API_KEY not configured. AI generation will return placeholder text.")
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        self.model = genai.GenerativeModel('gemini-pro')
     
-    async def generate_article(
+    async def generate_factual_summary(
         self, 
         facts: List[str], 
-        musings: List[str], 
         cluster_name: str
     ) -> str:
-        """Generate desensationalized article using Gemini API"""
-        if not self.configured:
-            return self._generate_placeholder_article(facts, musings, cluster_name)
+        """Generate a purely factual summary"""
+        facts_text = "\n".join(f"• {fact}" for fact in facts[:15])
+        
+        prompt = f"""
+        Create a factual, objective summary about "{cluster_name}" based on these verified facts:
+
+        {facts_text}
+
+        Requirements:
+        - Only use information from the provided facts
+        - Write in objective, neutral tone
+        - No opinions or speculation
+        - Focus on who, what, when, where, why
+        - Maximum 200 words
+        """
         
         try:
-            facts_text = "\n• ".join(facts) if facts else "No specific facts available."
-            musings_text = "\n• ".join(musings) if musings else "No opinions or commentary available."
-            
-            prompt = f"""Generate a professional, neutral news article about "{cluster_name}" based on these verified facts:
-
-VERIFIED FACTS:
-• {facts_text}
-
-Requirements:
-1. Write in objective, journalistic style
-2. Use only the facts provided - do not add speculation
-3. Structure the article with a clear headline and body
-4. Keep the tone neutral and factual
-5. After the main article, add a brief "Analysis & Commentary" section if relevant opinions are available
-
-AVAILABLE COMMENTARY:
-• {musings_text}
-
-Format the output as a complete news article with proper structure."""
-
-            # Run the generation in a thread to avoid blocking
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None, 
-                lambda: self.model.generate_content(prompt)
-            )
-            
+            response = self.model.generate_content(prompt)
             return response.text
-            
         except Exception as e:
-            print(f"AI generation error: {e}")
-            return self._generate_placeholder_article(facts, musings, cluster_name)
+            return f"Error generating factual summary: {str(e)}"
     
-    def _generate_placeholder_article(
+    async def generate_contextual_analysis(
+        self, 
+        context: List[str], 
+        background: List[str], 
+        cluster_name: str
+    ) -> str:
+        """Generate contextual analysis with background information"""
+        context_text = "\n".join(f"• {ctx}" for ctx in context[:10])
+        background_text = "\n".join(f"• {bg}" for bg in background[:10])
+        
+        prompt = f"""
+        Create a contextual analysis about "{cluster_name}" using this information:
+
+        CONTEXT:
+        {context_text}
+
+        BACKGROUND:
+        {background_text}
+
+        Requirements:
+        - Explain the broader context and significance
+        - Provide historical background where relevant
+        - Connect current events to past developments
+        - Explain why this matters
+        - Use analytical but accessible language
+        - Maximum 250 words
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            return f"Error generating contextual analysis: {str(e)}"
+    
+    async def generate_comprehensive_article(
         self, 
         facts: List[str], 
         musings: List[str], 
+        context: List[str],
+        background: List[str],
         cluster_name: str
     ) -> str:
-        """Generate a simple article structure when AI is not available"""
+        """Generate a comprehensive article combining all elements"""
+        # Limit items to prevent token overflow
+        facts_text = "\n".join(f"• {fact}" for fact in facts[:10])
+        context_text = "\n".join(f"• {ctx}" for ctx in context[:8])
+        background_text = "\n".join(f"• {bg}" for bg in background[:8])
         
-        article = f"# {cluster_name}\n\n"
+        prompt = f"""
+        Write a comprehensive news article about "{cluster_name}" structured as follows:
+
+        FACTS:
+        {facts_text}
+
+        CONTEXT:
+        {context_text}
+
+        BACKGROUND:
+        {background_text}
+
+        Structure the article with:
+        1. Lead paragraph with key facts
+        2. Context section explaining current situation
+        3. Background section with historical information
+        4. Analysis of significance and implications
+
+        Requirements:
+        - Professional news writing style
+        - Clear section breaks
+        - Objective and balanced
+        - Maximum 400 words
+        """
         
-        if facts:
-            article += "## Key Facts\n\n"
-            for fact in facts:
-                article += f"• {fact}\n"
-            article += "\n"
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            return f"Error generating comprehensive article: {str(e)}"
+    
+    async def generate_context_paragraph(
+        self, 
+        context_items: List[str], 
+        cluster_name: str
+    ) -> str:
+        """Generate a coherent context paragraph"""
+        if not context_items:
+            return ""
+            
+        context_text = "\n".join(f"• {ctx}" for ctx in context_items[:8])
         
-        article += "## Summary\n\n"
-        article += f"Based on the available information about {cluster_name}, "
+        prompt = f"""
+        Create a coherent paragraph explaining the current context for "{cluster_name}" using these context points:
+
+        {context_text}
+
+        Requirements:
+        - Write as a single, flowing paragraph
+        - Explain the current situation and immediate circumstances
+        - Use clear, accessible language
+        - Connect the different context points logically
+        - Maximum 150 words
+        - Start with "The current situation regarding {cluster_name}..."
+        """
         
-        if facts:
-            article += f"several key developments have been reported. "
-            article += "The situation continues to evolve as more information becomes available.\n\n"
-        else:
-            article += "limited factual information is currently available.\n\n"
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            return f"Error generating context paragraph: {str(e)}"
+    
+    async def generate_background_paragraph(
+        self, 
+        background_items: List[str], 
+        cluster_name: str
+    ) -> str:
+        """Generate a coherent background paragraph"""
+        if not background_items:
+            return ""
+            
+        background_text = "\n".join(f"• {bg}" for bg in background_items[:8])
         
-        if musings:
-            article += "## Analysis & Commentary\n\n"
-            for musing in musings:
-                article += f"• {musing}\n"
+        prompt = f"""
+        Create a coherent paragraph explaining the historical background for "{cluster_name}" using these background points:
+
+        {background_text}
+
+        Requirements:
+        - Write as a single, flowing paragraph
+        - Explain historical context and how we got to this point
+        - Use clear, accessible language
+        - Connect historical events chronologically where possible
+        - Maximum 150 words
+        - Start with "The background to {cluster_name}..."
+        """
         
-        return article
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            return f"Error generating background paragraph: {str(e)}"

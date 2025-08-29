@@ -100,21 +100,65 @@ async def process_articles_with_storage(
                     elif action == "merged":
                         clusters_merged += 1
                     
+                    # Create detailed article summaries (truncate content for response)
+                    article_summaries = []
+                    for article in articles_in_cluster:
+                        article_summary = {
+                            "title": article.title,
+                            "content": article.content[:500] + "..." if len(article.content) > 500 else article.content,  # Truncate for response
+                            "source": article.source,
+                            "published_at": article.published_at.isoformat() if article.published_at else None,
+                            "url": article.url,
+                            "image_url": article.image_url
+                        }
+                        article_summaries.append(article_summary)
+                    
                     storage_results.append({
                         "cluster_id": cluster_id,
                         "cluster_name": cluster_result.cluster_name,
                         "action": action,
                         "articles_count": len(articles_in_cluster),
                         "facts_count": len(cluster_result.facts),
-                        "musings_count": len(cluster_result.musings)
+                        "musings_count": len(cluster_result.musings),
+                        "articles": article_summaries,
+                        "facts": cluster_result.facts,
+                        "musings": cluster_result.musings,
+                        "sources": list(set([a.source for a in articles_in_cluster if a.source])),
+                        "article_urls": [a.url for a in articles_in_cluster if a.url],
+                        "generated_article": cluster_result.generated_article[:1000] + "..." if len(cluster_result.generated_article) > 1000 else cluster_result.generated_article,
+                        "similarity_scores": cluster_result.similarity_scores,
+                        "cluster_analysis": {
+                            "factual_summary": cluster_result.factual_summary[:500] + "..." if len(cluster_result.factual_summary) > 500 else cluster_result.factual_summary,
+                            "contextual_analysis": cluster_result.contextual_analysis[:500] + "..." if len(cluster_result.contextual_analysis) > 500 else cluster_result.contextual_analysis,
+                            "context": cluster_result.context[:500] + "..." if len(cluster_result.context) > 500 else cluster_result.context,
+                            "background": cluster_result.background[:500] + "..." if len(cluster_result.background) > 500 else cluster_result.background
+                        }
                     })
                 
                 except Exception as e:
                     logger.error(f"Failed to store cluster: {str(e)}")
+                    # Create detailed article summaries even for failed clusters
+                    article_summaries = []
+                    for article in articles_in_cluster:
+                        article_summary = {
+                            "title": article.title,
+                            "content": article.content[:500] + "..." if len(article.content) > 500 else article.content,
+                            "source": article.source,
+                            "published_at": article.published_at.isoformat() if article.published_at else None,
+                            "url": article.url,
+                            "image_url": article.image_url
+                        }
+                        article_summaries.append(article_summary)
+                    
                     storage_results.append({
                         "cluster_name": cluster_result.cluster_name,
                         "action": "failed",
-                        "error": str(e)
+                        "error": str(e),
+                        "articles_count": len(articles_in_cluster),
+                        "articles": article_summaries,
+                        "facts": cluster_result.facts,
+                        "musings": cluster_result.musings,
+                        "attempted_storage": True
                     })
         
         # Store task result
@@ -132,22 +176,35 @@ async def process_articles_with_storage(
             "completed_at": datetime.now()
         }
         
-        logger.info(f"Scrape-process-store pipeline completed for task {task_id}")
+        logger.info(f"Cluster processing with storage completed for task {task_id}")
         
         processing_time = time.time() - start_time
         
-        return {
+        # Prepare comprehensive response
+        response_data = {
             "success": True,
             "task_id": task_id,
-            "status": "completed",  # Adding required field
+            "status": "completed",
             "message": f"Processed {len(request.articles)} articles into {len(processed_clusters)} clusters and stored in database",
-            "clusters_processed": len(processed_clusters),  # Adding required field
+            "clusters_processed": len(processed_clusters),
             "clusters_stored": clusters_stored,
             "clusters_merged": clusters_merged,
             "storage_results": storage_results,
             "timestamp": datetime.now().isoformat(),
-            "processing_time": processing_time
+            "processing_time": processing_time,
+            "summary": {
+                "total_articles_processed": len(request.articles),
+                "total_clusters_created": len(processed_clusters),
+                "successful_storage_operations": clusters_stored + clusters_merged,
+                "failed_operations": len([r for r in storage_results if r.get("action") == "failed"]),
+                "total_facts_extracted": sum(len(r.get("facts", [])) for r in storage_results),
+                "total_musings_extracted": sum(len(r.get("musings", [])) for r in storage_results),
+                "unique_sources": len(set(source for r in storage_results for source in r.get("sources", []))),
+                "articles_with_urls": len([r for r in storage_results for a in r.get("articles", []) if a.get("url")])
+            }
         }
+        
+        return response_data
         
     except HTTPException:
         raise

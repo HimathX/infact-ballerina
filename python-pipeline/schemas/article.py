@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class Article(BaseModel):
@@ -16,6 +16,8 @@ class ArticleResponse(BaseModel):
     content: str
     facts: List[str]
     musings: List[str]
+    context: List[str] = Field(default=[], description="Background context and historical information")
+    background: List[str] = Field(default=[], description="Related background information")
     cluster_id: int
     cluster_name: str
     image_url: Optional[str] = Field(None, description="Article image URL")
@@ -31,6 +33,13 @@ class ClusterResult(BaseModel):
     articles_count: int
     facts: List[str]
     musings: List[str]
-    generated_article: str
+    context: str = Field(default="", description="Background context paragraph")
+    background: str = Field(default="", description="Historical background paragraph")
+    generated_article: str = Field(default="", description="AI-generated comprehensive article")
+    factual_summary: str = Field(default="", description="AI-generated factual summary")
+    contextual_analysis: str = Field(default="", description="AI-generated contextual analysis")
     similarity_scores: List[float]
     image_url: Optional[str] = Field(None, description="Cluster representative image URL")
+    sources: List[str] = Field(default=[], description="News sources in this cluster")
+    article_urls: List[str] = Field(default=[], description="URLs of articles in this cluster")
+    source_counts: Dict[str, int] = Field(default={}, description="Count of articles per source")

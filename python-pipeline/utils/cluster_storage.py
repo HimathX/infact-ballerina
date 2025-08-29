@@ -138,6 +138,7 @@ class ClusterStorageManager:
                     article_ids.append(result.inserted_id)
             
             # Create cluster document
+            article_urls = [article.url for article in articles if article.url]
             cluster_doc = {
                 "cluster_name": cluster_result.cluster_name,
                 "keywords": keywords,
@@ -151,6 +152,7 @@ class ClusterStorageManager:
                 "created_at": datetime.now(),
                 "updated_at": datetime.now(),
                 "article_ids": article_ids,
+                "article_urls": article_urls,
                 "cluster_id": cluster_result.cluster_id
             }
             
@@ -216,6 +218,10 @@ class ClusterStorageManager:
             merged_sources = list(set(existing_cluster.get("sources", []) + new_sources))
             merged_article_ids = list(set(existing_cluster.get("article_ids", []) + new_article_ids))
             
+            # Merge article URLs
+            new_article_urls = [article.url for article in new_articles if article.url]
+            merged_article_urls = list(set(existing_cluster.get("article_urls", []) + new_article_urls))
+            
             # Compute new embedding (average of existing and new)
             existing_embedding = existing_cluster.get("embedding", [])
             if existing_embedding and len(existing_embedding) == len(new_embedding):
@@ -235,6 +241,7 @@ class ClusterStorageManager:
                     "sources": merged_sources,
                     "articles_count": len(merged_article_ids),
                     "article_ids": merged_article_ids,
+                    "article_urls": merged_article_urls,
                     "embedding": merged_embedding,
                     "updated_at": datetime.now()
                 }

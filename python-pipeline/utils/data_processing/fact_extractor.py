@@ -1,134 +1,145 @@
 import spacy
-from textblob import TextBlob
-from typing import List, Tuple
-from fuzzywuzzy import fuzz
+from typing import List, Tuple, Dict, Any
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 from core.config import settings
 
 class FactExtractor:
-    def __init__(self, nlp):
-        self.nlp = nlp
+    def __init__(self, nlp_model):
+        self.nlp = nlp_model
         
-        # Enhanced word lists for better classification
-        self.opinion_words = [
-            'believe', 'think', 'feel', 'seems', 'appears', 'might', 'could', 
-            'should', 'opinion', 'argue', 'suggest', 'claim', 'allegedly',
-            'supposedly', 'presumably', 'perhaps', 'maybe', 'probably',
-            'likely', 'unlikely', 'doubt', 'suspect', 'assume'
+        # Keywords that indicate background/context information
+        self.context_indicators = [
+            "background", "context", "historically", "previously", "in the past",
+            "according to", "experts say", "analysts believe", "research shows",
+            "studies indicate", "data suggests", "statistics show"
+        ]
+        
+        self.background_indicators = [
+            "since", "for years", "over time", "traditionally", "has been",
+            "originated", "began", "started", "founded", "established",
+            "timeline", "chronology", "sequence of events"
         ]
         
         self.fact_indicators = [
-            'reported', 'announced', 'confirmed', 'according to', 'data shows',
-            'study', 'research', 'statistics', 'number', 'percent', 'percentage',
-            'dollar', 'million', 'billion', 'year', 'month', 'day', 'time',
-            'date', 'official', 'government', 'agency', 'department', 'court',
-            'law', 'legal', 'regulation', 'policy', 'company', 'corporation'
+            "confirmed", "reported", "announced", "stated", "declared",
+            "according to official", "government said", "police reported",
+            "data shows", "statistics reveal", "numbers indicate"
         ]
-    
-    def extract(self, text: str) -> Tuple[List[str], List[str]]:
-        """Extract fact bullets and separate musings using NER and rules"""
-        doc = self.nlp(text[:5000])  # Limit for processing
+
+    def extract(self, text: str) -> Tuple[List[str], List[str], List[str], List[str]]:
+        """
+        Extract facts, musings, context, and background from text
+        Returns: (facts, musings, context, background)
+        """
+        doc = self.nlp(text)
+        sentences = [sent.text.strip() for sent in doc.sents]
         
         facts = []
         musings = []
+        context = []
+        background = []
         
-        for sent in doc.sents:
-            sent_text = sent.text.strip()
-            if not sent_text or len(sent_text) < 20:
-                continue
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
             
-            # Use TextBlob for sentiment
-            try:
-                blob = TextBlob(sent_text)
-                sentiment = blob.sentiment.polarity  #type:ignore
-            except:
-                sentiment = 0.0
-            
-            # Check for entities (facts often contain entities)
-            has_entities = len(sent.ents) > 0
-            has_numbers = any(token.like_num for token in sent)
-            has_dates = any(ent.label_ in ['DATE', 'TIME'] for ent in sent.ents)
-            
-            # Check for opinion indicators
-            has_opinion = any(word in sent_text.lower() for word in self.opinion_words)
-            
-            # Check for factual indicators
-            has_fact_indicator = any(indicator in sent_text.lower() for indicator in self.fact_indicators)
-            
-            # Classification logic with scoring
-            fact_score = 0
-            opinion_score = 0
-            
-            # Positive fact indicators
-            if has_fact_indicator:
-                fact_score += 3
-            if has_entities:
-                fact_score += 2
-            if has_numbers:
-                fact_score += 2
-            if has_dates:
-                fact_score += 2
-            if abs(sentiment) < 0.3:  # Neutral sentiment
-                fact_score += 1
-            
-            # Positive opinion indicators
-            if has_opinion:
-                opinion_score += 3
-            if abs(sentiment) > 0.6:  # Strong sentiment
-                opinion_score += 2
-            if any(word in sent_text.lower() for word in ['amazing', 'terrible', 'wonderful', 'awful']):
-                opinion_score += 2
-            
-            # Clean up the text
-            clean_text = sent_text.replace('\\n', ' ').replace('\\t', ' ').strip()
-            clean_text = ' '.join(clean_text.split())  # Remove extra whitespace
-            
-            # Classify based on scores
-            if fact_score > opinion_score and len(clean_text) < 300:
-                facts.append(clean_text)
-            elif opinion_score > fact_score and len(clean_text) < 300:
-                musings.append(clean_text)
+            # Classify sentence type
+            if self._is_factual(sentence_lower):
+                facts.append(sentence)
+            elif self._is_context(sentence_lower):
+                context.append(sentence)
+            elif self._is_background(sentence_lower):
+                background.append(sentence)
+            elif self._is_opinion(sentence_lower):
+                musings.append(sentence)
+            else:
+                # Default to facts if unclear
+                facts.append(sentence)
         
-        return facts[:settings.MAX_FACTS_PER_CLUSTER], musings[:settings.MAX_MUSINGS_PER_CLUSTER]
+        return facts[:settings.MAX_FACTS_PER_CLUSTER], musings[:settings.MAX_MUSINGS_PER_CLUSTER], context, background
     
-    def merge_similar_bullets(self, bullets: List[str]) -> Tuple[List[str], List[float]]:
-        """Merge similar bullets using fuzzy matching"""
-        if len(bullets) <= 1:
-            return bullets, []
+    def merge_similar_bullets(self, bullets: List[str], similarity_threshold: float = 0.8) -> Tuple[List[str], List[float]]:
+        """
+        Merge similar bullet points to remove duplicates
+        Returns: (merged_bullets, similarity_scores)
+        """
+        if not bullets or len(bullets) <= 1:
+            return bullets, [1.0] * len(bullets)
         
-        threshold = settings.SIMILARITY_THRESHOLD * 100  # Convert to percentage
-        merged = []
-        used = set()
-        similarity_scores = []
-        
-        for i, bullet1 in enumerate(bullets):
-            if i in used:
-                continue
-                
-            similar_group = [bullet1]
-            group_scores = []
+        try:
+            # Use TF-IDF to compute similarity
+            vectorizer = TfidfVectorizer(
+                stop_words='english',
+                ngram_range=(1, 2),
+                max_features=1000
+            )
             
-            for j, bullet2 in enumerate(bullets[i+1:], i+1):
-                if j in used:
+            # Fit and transform the bullets
+            tfidf_matrix = vectorizer.fit_transform(bullets)
+            
+            # Compute cosine similarity matrix
+            similarity_matrix = cosine_similarity(tfidf_matrix)
+            
+            # Find similar bullets and merge them
+            merged_bullets = []
+            used_indices = set()
+            similarity_scores = []
+            
+            for i, bullet in enumerate(bullets):
+                if i in used_indices:
                     continue
+                
+                # Find similar bullets
+                similar_indices = []
+                for j in range(i + 1, len(bullets)):
+                    if j not in used_indices and similarity_matrix[i][j] >= similarity_threshold:
+                        similar_indices.append(j)
+                
+                if similar_indices:
+                    # Merge similar bullets (keep the longest one as representative)
+                    candidates = [bullet] + [bullets[j] for j in similar_indices]
+                    representative = max(candidates, key=len)
+                    merged_bullets.append(representative)
                     
-                # Multiple fuzzy matching strategies
-                ratio1 = fuzz.ratio(bullet1, bullet2)
-                ratio2 = fuzz.token_sort_ratio(bullet1, bullet2)
-                ratio3 = fuzz.token_set_ratio(bullet1, bullet2)
-                
-                # Use the highest ratio
-                best_ratio = max(ratio1, ratio2, ratio3)
-                
-                if best_ratio > threshold:
-                    similar_group.append(bullet2)
-                    used.add(j)
-                    group_scores.append(best_ratio / 100.0)
+                    # Mark indices as used
+                    used_indices.add(i)
+                    used_indices.update(similar_indices)
+                    
+                    # Calculate average similarity score
+                    similarities = [similarity_matrix[i][j] for j in similar_indices]
+                    avg_similarity = np.mean([1.0] + similarities) if similarities else 1.0
+                    similarity_scores.append(float(avg_similarity))
+                else:
+                    # No similar bullets found
+                    merged_bullets.append(bullet)
+                    used_indices.add(i)
+                    similarity_scores.append(1.0)
             
-            # Keep the longest bullet from similar group (usually most informative)
-            merged.append(max(similar_group, key=len))
-            used.add(i)
+            return merged_bullets, similarity_scores
             
-            if group_scores:
-                similarity_scores.extend(group_scores)
-        
-        return merged, similarity_scores
+        except Exception as e:
+            # Fallback: return original bullets if similarity computation fails
+            print(f"Warning: Could not compute similarity for bullet merging: {e}")
+            return bullets, [1.0] * len(bullets)
+    
+    def _is_factual(self, sentence: str) -> bool:
+        """Check if sentence contains factual information"""
+        return any(indicator in sentence for indicator in self.fact_indicators)
+    
+    def _is_context(self, sentence: str) -> bool:
+        """Check if sentence provides context"""
+        return any(indicator in sentence for indicator in self.context_indicators)
+    
+    def _is_background(self, sentence: str) -> bool:
+        """Check if sentence provides background information"""
+        return any(indicator in sentence for indicator in self.background_indicators)
+    
+    def _is_opinion(self, sentence: str) -> bool:
+        """Check if sentence contains opinions/musings"""
+        opinion_indicators = [
+            "i think", "i believe", "in my opinion", "it seems", "appears to",
+            "might", "could", "should", "would", "may", "perhaps", "possibly"
+        ]
+        return any(indicator in sentence for indicator in opinion_indicators)
