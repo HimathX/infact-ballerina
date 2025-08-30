@@ -175,7 +175,7 @@ service /news on new http:Listener(9090, {
         _ = start processRssExtractionAsync(requestBody);
     }
 
-        // Get all articles endpoint
+    // Get all articles endpoint
     resource function get articles(http:Caller caller, http:Request request) returns error? {
         types:NewsArticle[] articles = check utils:getAllNewsArticles();
         
@@ -349,6 +349,175 @@ service /news on new http:Listener(9090, {
         
         return result;
     }
+
+    // Get all clusters endpoint
+    resource function get allClusters(int? 'limit = 20, int? skip = 0, string? sort_by = "created_at", int? sort_order = -1) returns types:ClusterListResponse|types:ErrorResponse|http:InternalServerError {
+        // Validate parameters
+        types:ErrorResponse? validationError = utils:validateAllClustersParams('limit = 'limit, skip = skip, sortBy = sort_by, sortOrder = sort_order);
+        if validationError is types:ErrorResponse {
+            return validationError;
+        }
+        
+        // Use provided values or defaults
+        int limitValue = 'limit ?: 20;
+        int skipValue = skip ?: 0;
+        string sortByValue = sort_by ?: "created_at";
+        int sortOrderValue = sort_order ?: -1;
+        
+        types:ClusterListResponse|error result = utils:getAllClusters(
+            'limit = limitValue, 
+            skip = skipValue, 
+            sortBy = sortByValue, 
+            sortOrder = sortOrderValue
+        );
+        
+        if result is error {
+            log:printError("Error getting all clusters", 'error = result);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to retrieve clusters: " + result.message(),
+                    error_code: "RETRIEVAL_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
+
+    // Get specific cluster by ID
+    resource function get clusters/[string cluster_id]() returns types:SingleClusterResponse|types:ErrorResponse|http:InternalServerError {
+        // Validate cluster ID
+        types:ErrorResponse? validationError = utils:validateClusterId(clusterId = cluster_id);
+        if validationError is types:ErrorResponse {
+            return validationError;
+        }
+        
+        types:SingleClusterResponse|error result = utils:getClusterById(clusterId = cluster_id);
+        
+        if result is error {
+            log:printError("Error getting cluster by ID", 'error = result, cluster_id = cluster_id);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to retrieve cluster: " + result.message(),
+                    error_code: "RETRIEVAL_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
+
+    // Get articles belonging to a specific cluster
+    resource function get clusters/[string cluster_id]/articles(string? sort_by = "published_at", int? sort_order = -1) returns types:ClusterArticlesResponse|types:ErrorResponse|http:InternalServerError {
+        // Validate cluster ID
+        types:ErrorResponse? clusterValidationError = utils:validateClusterId(clusterId = cluster_id);
+        if clusterValidationError is types:ErrorResponse {
+            return clusterValidationError;
+        }
+        
+        // Validate article sorting parameters
+        types:ErrorResponse? sortValidationError = utils:validateArticleSortParams(sortBy = sort_by, sortOrder = sort_order);
+        if sortValidationError is types:ErrorResponse {
+            return sortValidationError;
+        }
+        
+        // Use provided values or defaults
+        string sortByValue = sort_by ?: "published_at";
+        int sortOrderValue = sort_order ?: -1;
+        
+        types:ClusterArticlesResponse|error result = utils:getClusterArticles(
+            clusterId = cluster_id,
+            sortBy = sortByValue,
+            sortOrder = sortOrderValue
+        );
+        
+        if result is error {
+            log:printError("Error getting cluster articles", 'error = result, cluster_id = cluster_id);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to retrieve cluster articles: " + result.message(),
+                    error_code: "CLUSTER_ARTICLES_RETRIEVAL_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
+
+    // Search clusters by query
+    resource function post search(@http:Payload types:ClusterSearchRequest searchRequest) returns types:ClusterSearchResponse|types:ErrorResponse|http:InternalServerError {
+        // Validate search request
+        types:ErrorResponse? validationError = utils:validateClusterSearchRequest(searchRequest = searchRequest);
+        if validationError is types:ErrorResponse {
+            return validationError;
+        }
+        
+        types:ClusterSearchResponse|error result = utils:searchClusters(searchRequest = searchRequest);
+        
+        if result is error {
+            log:printError("Error searching clusters", 'error = result, query = searchRequest.query);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to search clusters: " + result.message(),
+                    error_code: "SEARCH_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
+
+    // Get clusters with highest article counts
+    resource function get trending\-topics(int? days_back = (), int? min_articles = 1) returns types:TopClustersResponse|types:ErrorResponse|http:InternalServerError {
+        // Validate trending topics parameters
+        types:ErrorResponse? validationError = utils:validateTrendingTopicsParams(daysBack = days_back, minArticles = min_articles);
+        if validationError is types:ErrorResponse {
+            return validationError;
+        }
+        
+        // Use provided values or defaults
+        int minArticlesValue = min_articles ?: 1;
+        
+        types:TopClustersResponse|error result = utils:getTopClustersByArticleCount(
+            daysBack = days_back,
+            minArticles = minArticlesValue
+        );
+        
+        if result is error {
+            log:printError("Error getting top clusters by article count", 'error = result, days_back = days_back, min_articles = minArticlesValue);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to retrieve top clusters: " + result.message(),
+                    error_code: "TOP_CLUSTERS_RETRIEVAL_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
+
+    // Get weekly digest of all clusters from the last 7 days
+    resource function get weekly\-digest() returns types:WeeklyDigestResponse|types:ErrorResponse|http:InternalServerError {
+        types:WeeklyDigestResponse|error result = utils:getWeeklyDigest();
+        
+        if result is error {
+            log:printError("Error getting weekly digest", 'error = result);
+            return <http:InternalServerError>{
+                body: {
+                    success: false,
+                    message: "Failed to retrieve weekly digest: " + result.message(),
+                    error_code: "WEEKLY_DIGEST_RETRIEVAL_FAILED"
+                }
+            };
+        }
+        
+        return result;
+    }
 }
 
 // Async function to process RSS extraction without blocking the main thread
@@ -376,5 +545,4 @@ function processRssExtractionAsync(json requestBody) {
         return;
     }
     
-    log:printInfo("RSS extraction completed successfully. Inserted: " + response.inserted_count.toString() + ", Skipped: " + response.skipped_count.toString());
 }

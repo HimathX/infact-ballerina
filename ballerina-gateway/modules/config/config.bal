@@ -5,7 +5,7 @@ configurable string mongoUri = "mongodb+srv://himathnimpura:himathavenge@cluster
 configurable string databaseName = "newsstore";
 
 // MongoDB client instance
-public mongodb:Client mongoClient = check new ({
+public final mongodb:Client mongoClient = check new ({
     connection: mongoUri
 });
 
@@ -26,7 +26,7 @@ public function getDatabase() returns mongodb:Database|error {
 }
 
 // Public function to get news collection
-public function getNewsCollection() returns mongodb:Collection|error {
+public isolated function getNewsCollection() returns mongodb:Collection|error {
     mongodb:Database database = check mongoClient->getDatabase(databaseName);
     mongodb:Collection newsCollection = check database->getCollection("news");
     return newsCollection;
@@ -34,7 +34,7 @@ public function getNewsCollection() returns mongodb:Collection|error {
 
 // Public function to get clusters collection
 
-public function getClustersCollection() returns mongodb:Collection|error {
+public isolated function getClustersCollection() returns mongodb:Collection|error {
     mongodb:Database database = check mongoClient->getDatabase(databaseName);
     mongodb:Collection clustersCollection = check database->getCollection("clusters");
     return clustersCollection;
