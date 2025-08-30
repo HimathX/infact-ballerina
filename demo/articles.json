@@ -1,0 +1,202 @@
+[
+    {
+        "id": "lk1",
+        "title": "Sri Lanka's Economic Recovery Exceeds World Bank Projections",
+        "excerpt": "Island nation records 5% growth in 2024, surpassing 4.4% forecast as tourism and construction drive expansion.",
+        "bullets": [
+            "Tourism-related services show strong recovery momentum",
+            "Construction sector leads industrial growth surge",
+            "2025 growth expected to moderate to 3.5% amid global headwinds"
+        ],
+        "category": ["International", "Trending"],
+        "hoursAgo": 12,
+        "imageQuery": "colombo sri lanka economy development",
+        "sources": [
+            {
+                "name": "World Bank",
+                "domain": "worldbank.org",
+                "bias": "neu",
+                "musings": "Development update emphasizes recovery metrics and structural reform progress."
+            },
+            {
+                "name": "Daily Mirror LK",
+                "domain": "dailymirror.lk",
+                "bias": "pos",
+                "musings": "Highlights positive growth indicators and tourism revival success stories."
+            },
+            {
+                "name": "EconomyNext",
+                "domain": "economynext.com",
+                "bias": "neg",
+                "musings": "Cautions about medium-term structural impediments and global trade uncertainties."
+            }
+        ],
+        "content": [
+            "Sri Lanka's economy delivered a robust 5% growth rate in 2024, exceeding World Bank projections by 0.6 percentage points. Tourism services and construction activity drove the recovery from the nation's worst economic crisis.",
+            "Analysts credit IMF-backed reforms and debt restructuring progress, though warn of challenges ahead as growth is forecast to slow to 3.5% in 2025."
+        ],
+        "context": "The recovery marks a dramatic turnaround from the 2022 economic collapse that triggered widespread protests and political upheaval. Tourism arrivals have rebounded significantly from crisis lows, while construction projects resume as foreign exchange stability improves. The IMF Extended Fund Facility program continues to guide fiscal consolidation and structural reforms aimed at preventing future crises.",
+        "background": "Sri Lanka faced its worst economic crisis since independence in 2022, with foreign reserves depleted, currency collapsing, and severe shortages of fuel and essential goods. The crisis led to the resignation of President Gotabaya Rajapaksa and triggered negotiations with the IMF for a $2.9 billion bailout package. Anura Kumara Dissanayake was elected president in September 2024, promising continued reforms while addressing poverty concerns.",
+        "coverage": "High — World Bank official reports and local media confirmation."
+    },
+    {
+        "id": "lk2",
+        "title": "IMF Mission Concludes Latest Sri Lanka Review in Colombo",
+        "excerpt": "Fund officials assess reform progress as Extended Fund Facility program enters critical phase.",
+        "bullets": [
+            "Mission team meets with government officials on fiscal targets",
+            "Structural reform implementation under review",
+            "Tax revenue collection progress evaluated against 15% GDP target"
+        ],
+        "category": ["International"],
+        "hoursAgo": 18,
+        "imageQuery": "imf sri lanka meeting colombo",
+        "sources": [
+            {
+                "name": "IMF",
+                "domain": "imf.org",
+                "bias": "neu",
+                "musings": "Mission statement focuses on technical program compliance and reform milestones."
+            },
+            {
+                "name": "Ada Derana",
+                "domain": "adaderana.lk",
+                "bias": "pos",
+                "musings": "Emphasizes government cooperation and progress toward economic stability."
+            },
+            {
+                "name": "Lanka e News",
+                "domain": "lankaenews.com",
+                "bias": "neg",
+                "musings": "Questions social impact of austerity measures and public sector reforms."
+            }
+        ],
+        "content": [
+            "An IMF mission team led by Evan Papageorgiou completed a five-day visit to Colombo, discussing macroeconomic developments and policy implementation under the Extended Fund Facility arrangement.",
+            "The review comes as Sri Lanka works to meet ambitious tax-to-GDP ratio targets while managing unemployment concerns following public sector restructuring."
+        ],
+        "context": "The IMF program requires Sri Lanka to raise its tax-to-GDP ratio from 8.1% in 2021 to 15% by 2025, necessitating major tax increases including VAT rising from 8% to 18%. The reforms aim to restore fiscal sustainability but have contributed to rising unemployment as public sector employment contracts. Regular IMF reviews determine disbursement of bailout tranches critical for balance of payments support.",
+        "background": "The $2.9 billion IMF Extended Fund Facility approved in 2023 represents the largest bailout in Sri Lankan history relative to quota. The program emphasizes structural reforms including state-owned enterprise restructuring, central bank independence, and governance improvements. Success depends on maintaining political consensus across election cycles while managing social costs of adjustment.",
+        "coverage": "Medium — IMF official statements with local government confirmation."
+    },
+    {
+        "id": "lk3",
+        "title": "Former President Wickremesinghe Arrested on Misuse of Funds Charges",
+        "excerpt": "Police detain ex-leader over alleged financial irregularities related to London trip expenses.",
+        "bullets": [
+            "Charges involve public fund misuse during official travel",
+            "Investigation focuses on presidential trip expenditures",
+            "Legal proceedings expected to continue in coming weeks"
+        ],
+        "category": ["International", "Trending"],
+        "hoursAgo": 168,
+        "imageQuery": "ranil wickremesinghe sri lanka arrest",
+        "sources": [
+            {
+                "name": "Al Jazeera",
+                "domain": "aljazeera.com",
+                "bias": "neu",
+                "musings": "Reports arrest details and corruption allegations without editorial commentary."
+            },
+            {
+                "name": "News First",
+                "domain": "newsfirst.lk",
+                "bias": "pos",
+                "musings": "Frames as accountability measure demonstrating rule of law progress."
+            },
+            {
+                "name": "Ceylon Today",
+                "domain": "ceylontoday.lk",
+                "bias": "neg",
+                "musings": "Highlights political implications and potential impact on reform credibility."
+            }
+        ],
+        "content": [
+            "Former President Ranil Wickremesinghe was arrested by Sri Lankan police on charges of misusing public funds in connection with official travel expenses to London during his presidency.",
+            "The arrest represents a significant development in the country's anti-corruption efforts as new leadership seeks to demonstrate accountability for past financial irregularities."
+        ],
+        "context": "Wickremesinghe served as president during the height of Sri Lanka's economic crisis from July 2022 to September 2024, implementing IMF-backed reforms and stabilizing the currency. His arrest comes under the new administration of President Anura Kumara Dissanayake, who campaigned on anti-corruption promises. The charges relate to financial oversight during a period when the country faced severe foreign exchange shortages.",
+        "background": "Wickremesinghe assumed the presidency after Gotabaya Rajapaksa fled the country amid mass protests in 2022. He oversaw the initial IMF negotiations and debt restructuring efforts that helped stabilize the economy. However, his administration faced criticism for maintaining connections to the previous government and allegedly insufficient transparency in crisis management. His arrest signals a break from past practices of political immunity.",
+        "coverage": "High — international and local media coverage with official confirmation."
+    },
+    {
+        "id": "lk4",
+        "title": "Colombo Deploys Solar-Powered Boats for Beira Lake Cleanup",
+        "excerpt": "Western Province launches eco-friendly waste collection initiative in downtown lake system.",
+        "bullets": [
+            "Electric boats powered by solar panels reduce emissions",
+            "Waste collection efficiency improved in lake waters",
+            "Part of broader urban environmental restoration program"
+        ],
+        "category": ["Local", "International"],
+        "hoursAgo": 36,
+        "imageQuery": "beira lake colombo cleanup solar boats",
+        "sources": [
+            {
+                "name": "Ada Derana",
+                "domain": "adaderana.lk",
+                "bias": "neu",
+                "musings": "Covers technical specifications and deployment timeline for cleanup boats."
+            },
+            {
+                "name": "Daily News",
+                "domain": "dailynews.lk",
+                "bias": "pos",
+                "musings": "Highlights environmental benefits and tourism potential of cleaner lake."
+            },
+            {
+                "name": "Environmental Watch",
+                "domain": "envwatch.lk",
+                "bias": "neg",
+                "musings": "Questions long-term funding and maintenance sustainability of the program."
+            }
+        ],
+        "content": [
+            "Western Province Governor Hanif Yusoof announced the deployment of solar-powered electric boats to collect waste from Beira Lake, the historic man-made lake in central Colombo.",
+            "The initiative represents part of broader urban environmental restoration efforts as the city seeks to improve its ecological footprint and tourism appeal."
+        ],
+        "context": "Beira Lake has suffered from pollution and waste accumulation over decades of urban development. The lake plays an important role in Colombo's drainage system and cultural heritage, housing Buddhist temples on its islands. Cleaning efforts support both environmental goals and tourism development as Sri Lanka rebuilds its visitor industry following the economic crisis. Solar-powered vessels align with renewable energy commitments.",
+        "background": "Colombo's urban lakes have faced mounting environmental pressures from population growth and industrial development. Previous cleanup efforts relied on manual collection and conventional boats with higher operational costs and emissions. The solar boat initiative demonstrates how environmental restoration can incorporate clean technology solutions. Governor Yusoof has prioritized green infrastructure projects since taking office.",
+        "coverage": "Medium — provincial government announcements and local environmental reporting."
+    },
+    {
+        "id": "lk5",
+        "title": "New Safety Regulations Mandate for Sri Lankan Transport Sector",
+        "excerpt": "Gazette notification introduces passenger safety requirements amid growing travel demand.",
+        "bullets": [
+            "Comprehensive safety protocols for public transport",
+            "Enhanced inspection requirements for vehicle operators",
+            "Implementation timeline set for transport companies"
+        ],
+        "category": ["Local"],
+        "hoursAgo": 48,
+        "imageQuery": "sri lanka transport bus safety regulations",
+        "sources": [
+            {
+                "name": "Government News Portal",
+                "domain": "news.lk",
+                "bias": "neu",
+                "musings": "Official gazette notification details and regulatory compliance requirements."
+            },
+            {
+                "name": "Sunday Observer",
+                "domain": "sundayobserver.lk",
+                "bias": "pos",
+                "musings": "Welcomes safety improvements as necessary for passenger protection."
+            },
+            {
+                "name": "Transport Union",
+                "domain": "transportlk.org",
+                "bias": "neg",
+                "musings": "Raises concerns about compliance costs and implementation challenges for operators."
+            }
+        ],
+        "content": [
+            "A new gazette notification introduces mandatory safety regulations for passenger transport operators, including enhanced inspection requirements and standardized safety protocols.",
+            "The regulations come as domestic travel demand recovers and authorities seek to prevent accidents while supporting tourism sector rebuilding efforts."
+        ],
+        "context": "Sri Lanka's transport sector has expanded rapidly as economic conditions improve and tourism recovers. Road safety remains a significant concern with high accident rates compared to regional averages. The new regulations aim to standardize safety practices across different transport modes including buses, trains, and tourist vehicles. Implementation requires coordination between multiple government agencies and private operators.",
+        "background": "Transport safety became a heightened priority following several high-profile accidents during the economic crisis when vehicle maintenance suffered due to parts shortages and financial constraints. As the economy stabilizes, authorities have resources to enforce higher safety standards. The tourism industry recovery depends partly on visitor confidence in transport safety and reliability.",
+        "coverage": "Medium — official gazette and transport industry reporting."
+    }
+]

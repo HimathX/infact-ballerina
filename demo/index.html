@@ -1,0 +1,2595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Infact</title>
+    <meta name="description" content="Infact — a minimalist news aggregation app that de‑sensationalizes the news." />
+    <style>
+        /* =========================================================
+       INF A C T — minimalist, wireframe + Swiss-inspired UI
+       ========================================================= */
+        :root {
+            --bg: #ffffff;
+            --fg: #111111;
+            --muted: #666666;
+            --border: #e6e6e6;
+            --border-strong: #cfcfcf;
+            --accent: #6e4b3a;
+            /* faded deep brown, used sparingly */
+            --accent-muted: #8a6a59;
+            --card-bg: #ffffff;
+            --img-lines: #dcdcdc;
+            --hover: rgba(17, 17, 17, 0.04);
+            --focus: 2px dashed #6e4b3a;
+            --gutter: 24px;
+            --maxw: 1200px;
+            --topbar-h: 56px;
+            --tabbar-h: 44px;
+            --z-top: 1000;
+            --z-modal: 2000;
+        }
+
+        html[data-theme="dark"] {
+            --bg: #0f0f0f;
+            --fg: #efefef;
+            --muted: #a0a0a0;
+            --border: #232323;
+            --border-strong: #2d2d2d;
+            --card-bg: #101010;
+            --img-lines: #2a2a2a;
+            --hover: rgba(255, 255, 255, 0.04);
+            --focus: 2px dashed #8b5e4b;
+        }
+
+        /* Base */
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+            line-height: 1.5;
+            letter-spacing: 0.01em;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        a.underline {
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
+        button {
+            font: inherit;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: inherit;
+            padding: 6px 10px;
+            cursor: pointer;
+            line-height: 1;
+            border-radius: 0;
+            /* no rounding except circles */
+        }
+
+        button:hover {
+            background: var(--hover);
+        }
+
+        button:focus-visible {
+            outline: var(--focus);
+            outline-offset: 3px;
+        }
+
+        .thin {
+            font-weight: 300;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        /* Layout: Top bar */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-h);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            z-index: var(--z-top);
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                padding: 0 12px;
+                height: 48px;
+            }
+
+            :root {
+                --topbar-h: 48px;
+            }
+        }
+
+        .brand {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+        }
+
+        .brand .logo {
+            font-size: 22px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .brand .subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .brand {
+                gap: 8px;
+            }
+
+            .brand .logo {
+                font-size: 18px;
+            }
+
+            .brand .subtitle {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .brand .subtitle {
+                display: none;
+            }
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-self: center;
+            max-width: 400px;
+            width: 100%;
+            margin: 0 24px;
+        }
+
+        .search-input {
+            flex: 1;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--fg);
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 0;
+        }
+
+        .search-input:focus {
+            outline: var(--focus);
+            outline-offset: 2px;
+        }
+
+        .search-input::placeholder {
+            color: var(--muted);
+        }
+
+        .search-clear {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .search-clear:hover {
+            color: var(--fg);
+        }
+
+        .search-container.has-query .search-clear {
+            display: block;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                max-width: 160px;
+                margin: 0 16px;
+            }
+            .time-tag {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .actions {
+                gap: 4px;
+            }
+
+            .time-tag {
+                font-size: 10px;
+                padding: 4px 6px;
+            }
+
+            .search-container {
+                max-width: 100px;
+                margin: 0 8px;
+            }
+
+            .search-input {
+                font-size: 12px;
+                padding: 6px 8px;
+            }
+        }
+
+        .actions button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+        }
+
+        .actions button svg {
+            flex-shrink: 0;
+        }
+
+        .plainlink {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            text-decoration-thickness: 1px;
+        }
+
+        .time-tag {
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            font-size: 12px;
+            color: var(--muted);
+            background: var(--card-bg);
+        }
+
+        /* Tabs */
+        .tabstrip {
+            position: sticky;
+            top: var(--topbar-h);
+            z-index: var(--z-top);
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            height: var(--tabbar-h);
+            display: flex;
+            align-items: stretch;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tabs {
+            width: 100%;
+            max-width: var(--maxw);
+            margin: 0 auto;
+            display: grid;
+            grid-auto-flow: column;
+            gap: 2px;
+            padding: 0 16px;
+            min-width: min-content;
+        }
+
+        .tab {
+            border: 0;
+            border-right: 1px solid var(--border);
+            background: transparent;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            min-width: max-content;
+        }
+
+        .tab:last-child {
+            border-right: 0;
+        }
+
+        .tab[aria-selected="true"] {
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .tab:hover {
+            background: var(--hover);
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                padding: 0 12px;
+            }
+
+            .tab {
+                font-size: 11px;
+                padding: 8px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tab {
+                font-size: 10px;
+                padding: 8px 8px;
+            }
+        }
+
+        /* Main container spacing */
+        .page {
+            padding-top: calc(var(--topbar-h) + var(--tabbar-h) + 24px);
+            padding-bottom: 80px;
+        }
+
+        @media (max-width: 768px) {
+            .page {
+                padding-top: calc(var(--topbar-h) + var(--tabbar-h) + 16px);
+                padding-bottom: 60px;
+            }
+        }
+
+        /* Feed grid */
+        .feed {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 200px 1fr 300px;
+            grid-template-areas: "timeline main sidebar";
+            gap: 40px;
+        }
+
+        .feed.search-active {
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-areas: "filters main sidebar";
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--gutter);
+            grid-auto-rows: min-content;
+            grid-area: main;
+        }
+
+        /* Search Results */
+        .search-results {
+            display: none;
+            grid-area: main;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-results-header {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-results-count {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .search-results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .search-card {
+            display: grid;
+            grid-template-columns: 120px 1fr auto;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-card:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+
+        .search-card .img {
+            width: 120px;
+            height: 80px;
+            background:
+                repeating-linear-gradient(90deg,
+                    var(--img-lines) 0,
+                    var(--img-lines) 1px,
+                    transparent 1px,
+                    transparent 8px),
+                repeating-linear-gradient(0deg,
+                    var(--img-lines) 0,
+                    var(--img-lines) 1px,
+                    transparent 1px,
+                    transparent 8px);
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            font-size: 10px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .search-card .img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .search-card .content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .search-card .title {
+            font-weight: 700;
+            font-size: 16px;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .search-card .excerpt {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .search-card .meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .search-card .sources {
+            display: flex;
+            gap: 4px;
+        }
+
+        .search-card .sources .favicon {
+            width: 16px;
+            height: 16px;
+            font-size: 9px;
+        }
+
+        .search-card .sidebar-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            min-width: 80px;
+        }
+
+        @media (max-width: 768px) {
+            .search-card {
+                grid-template-columns: 80px 1fr;
+                grid-template-rows: auto auto;
+                gap: 12px;
+            }
+
+            .search-card .img {
+                width: 80px;
+                height: 60px;
+            }
+
+            .search-card .sidebar-info {
+                grid-column: 1 / -1;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* Feed sidebar */
+        .feed-sidebar {
+            position: sticky;
+            top: calc(var(--topbar-h) + var(--tabbar-h) + 24px);
+            height: fit-content;
+            grid-area: sidebar;
+        }
+
+        .search-sidebar {
+            position: sticky;
+            top: calc(var(--topbar-h) + var(--tabbar-h) + 24px);
+            height: fit-content;
+            grid-area: filters;
+            display: none;
+        }
+
+        .feed.search-active .search-sidebar {
+            display: block;
+        }
+
+        .feed.search-active .timeline {
+            display: none;
+        }
+
+        .feed-sidebar .block-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin: 0 0 12px 0;
+        }
+
+        .search-sidebar .block-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin: 0 0 12px 0;
+        }
+
+        .providers-list {
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            margin-bottom: 24px;
+        }
+
+        .provider {
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+        }
+
+        .provider:last-child {
+            border-bottom: 0;
+        }
+
+        .provider-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .provider-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .provider-domain {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .provider-details {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .provider-owner {
+            margin-bottom: 4px;
+        }
+
+        .provider-type {
+            font-style: italic;
+        }
+
+        /* Search Filters */
+        .search-filters {
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            margin-bottom: 24px;
+        }
+
+        .filter-group {
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+        }
+
+        .filter-group:last-child {
+            border-bottom: 0;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .filter-select {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--fg);
+            padding: 6px 8px;
+            font-size: 14px;
+            border-radius: 0;
+        }
+
+        .filter-select:focus {
+            outline: var(--focus);
+            outline-offset: 2px;
+        }
+
+        .filter-toggle {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .filter-toggle button {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .filter-toggle button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .date-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .date-input {
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--fg);
+            padding: 6px 8px;
+            font-size: 12px;
+            border-radius: 0;
+        }
+
+        .date-input:focus {
+            outline: var(--focus);
+            outline-offset: 2px;
+        }
+
+        /* Featured card variants */
+        .card.featured {
+            grid-column: span 2;
+        }
+
+        .card.tall {
+            grid-row: span 2;
+        }
+
+        .card.featured .title {
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        .card.tall .excerpt {
+            -webkit-line-clamp: 4;
+            max-height: 6em;
+        }
+
+        /* Staggered loading animation */
+        .card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: cardAppear 0.6s ease-out forwards;
+        }
+
+        @keyframes cardAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Parallax container */
+        .parallax-container {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* Smooth transitions */
+        .grid {
+            transition: opacity 0.3s ease-out;
+        }
+
+        .grid.transitioning {
+            opacity: 0.7;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 1024px) {
+            .feed {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "sidebar"
+                    "main";
+                gap: 24px;
+            }
+
+            .feed.search-active {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "filters"
+                    "main"
+                    "sidebar";
+            }
+
+            .feed-sidebar {
+                position: static;
+                margin-bottom: 16px;
+            }
+
+            .search-sidebar {
+                position: static;
+                margin-bottom: 16px;
+            }
+
+            .timeline {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .feed {
+                padding: 0 12px;
+            }
+
+            .card.featured,
+            .card.tall {
+                grid-column: span 1;
+                grid-row: span 1;
+            }
+
+            .card.featured .title {
+                font-size: 18px;
+            }
+
+            .card.tall .excerpt {
+                -webkit-line-clamp: 2;
+                max-height: 3.2em;
+            }
+        }
+
+        /* Card */
+        .card {
+            position: relative;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+        }
+
+        .card .img {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background:
+                repeating-linear-gradient(90deg,
+                    var(--img-lines) 0,
+                    var(--img-lines) 1px,
+                    transparent 1px,
+                    transparent 10px),
+                repeating-linear-gradient(0deg,
+                    var(--img-lines) 0,
+                    var(--img-lines) 1px,
+                    transparent 1px,
+                    transparent 10px);
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .card .img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .card .img.loading {
+            background: var(--card-bg);
+        }
+
+        .card .body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .card .title {
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: 0.01em;
+            font-family: Georgia, "Times New Roman", Times, serif;
+            line-height: 1.3;
+        }
+
+        .card .excerpt {
+            color: var(--muted);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-height: 3.2em;
+        }
+
+        @media (max-width: 768px) {
+            .card .title {
+                font-size: 16px;
+            }
+
+            .card .excerpt {
+                font-size: 14px;
+                -webkit-line-clamp: 3;
+                max-height: 4.2em;
+            }
+        }
+
+        .card .bottom {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        @media (max-width: 480px) {
+            .card .bottom {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 8px;
+                align-items: start;
+            }
+
+            .favicons {
+                order: 1;
+            }
+
+            .bias-mini {
+                order: 2;
+            }
+
+            .timestamp {
+                order: 3;
+                justify-self: start;
+            }
+        }
+
+        .favicons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .favicon {
+            width: 18px;
+            height: 18px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--border);
+            font-size: 10px;
+            color: var(--muted);
+            background: var(--bg);
+            user-select: none;
+        }
+
+        .bias-mini {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid var(--border-strong);
+            background: transparent;
+        }
+
+        .dot.neg {
+            background: #222;
+        }
+
+        /* negative in dark grey */
+        .dot.neu {
+            background: #999;
+        }
+
+        /* neutral in mid grey */
+        .dot.pos {
+            background: var(--accent);
+        }
+
+        /* positive uses deep brown accent */
+        .timestamp {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        /* Hover facts overlay */
+        .hoverfacts {
+            position: absolute;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-top: 1px solid var(--border-strong);
+            transform: translateY(100%);
+            transition: transform 180ms ease;
+            padding: 12px 14px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .card:hover .hoverfacts {
+            transform: translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .hoverfacts h5 {
+            margin: 0 0 6px 0;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .hoverfacts ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .hoverfacts li {
+            margin: 0 0 4px 0;
+            font-size: 13px;
+        }
+
+        /* Article view */
+        .article-view {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 0 16px;
+            display: none;
+        }
+
+        .article-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .article-view {
+                padding: 0 12px;
+            }
+
+            .article-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .backrow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .backlink {
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 12px;
+            background: var(--card-bg);
+        }
+
+        .keyfacts {
+            border: 1px solid var(--border);
+            padding: 14px;
+            margin-bottom: 22px;
+            background: var(--card-bg);
+        }
+
+        .keyfacts h3 {
+            margin: 0 0 6px 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .keyfacts ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .keyfacts li {
+            margin-bottom: 6px;
+        }
+
+        .article-title {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            margin: 0 0 12px 0;
+            font-family: Georgia, "Times New Roman", Times, serif;
+            line-height: 1.2;
+        }
+
+        .article-content {
+            font-family: Georgia, "Times New Roman", Times, serif;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .article-title {
+                font-size: 24px;
+            }
+
+            .article-content {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .article-title {
+                font-size: 20px;
+            }
+
+            .article-content {
+                font-size: 15px;
+            }
+        }
+
+        .article-content p {
+            margin: 0 0 16px 0;
+        }
+
+        .expander {
+            border-top: 1px solid var(--border);
+            margin-top: 26px;
+        }
+
+        .expander .exp-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px 0;
+        }
+
+        .expander .exp-title {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 12px;
+        }
+
+        .expander .exp-toggle {
+            font-size: 12px;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+        }
+
+        .expander .exp-body {
+            overflow: hidden;
+            height: 0;
+            opacity: 0;
+            transition: height 220ms ease, opacity 220ms ease;
+        }
+
+        .expander.expanded .exp-body {
+            /* height is set dynamically by JS for smooth transition */
+            opacity: 1;
+        }
+
+        .coverage {
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+
+        /* Sidebar */
+        .sidebar .block-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin: 0 0 10px 0;
+        }
+
+        .sidebar .expander {
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .sidebar .expander .exp-head {
+            padding: 12px;
+        }
+
+        .sidebar .expander .exp-body-inner {
+            padding: 0 12px 12px 12px;
+        }
+
+        .sidebar .expander .exp-body-inner p {
+            font-family: inherit;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .sources {
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .source {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .source:last-child {
+            border-bottom: 0;
+        }
+
+        .source-head {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .source-title {
+            font-weight: 600;
+        }
+
+        .source-mute {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .bias-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .source-body {
+            overflow: hidden;
+            height: 0;
+            opacity: 0;
+            transition: height 220ms ease, opacity 220ms ease;
+            padding: 0 10px;
+        }
+
+        .source.expanded .source-body {
+            opacity: 1;
+        }
+
+        .source-body p {
+            font-family: Georgia, "Times New Roman", Times, serif;
+            font-size: 16px;
+            margin: 10px 0 12px 0;
+        }
+
+        /* Modals (About, Settings) */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: var(--z-modal);
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 12vh;
+        }
+
+        .modal[open] {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(680px, 92vw);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 18px;
+        }
+
+        .modal-card h2 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .modal-card p {
+            margin: 0 0 10px 0;
+            color: var(--muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        /* Helpers */
+        .hidden {
+            display: none !important;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Selection */
+        ::selection {
+            background: rgba(110, 75, 58, 0.15);
+            color: inherit;
+        }
+
+        .timeline {
+            position: sticky;
+            top: calc(var(--topbar-h) + var(--tabbar-h) + 24px);
+            height: fit-content;
+            grid-area: timeline;
+        }
+
+        .timeline .block-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin: 0 0 12px 0;
+        }
+
+        .timeline-list {
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top bar -->
+    <header class="topbar" role="banner">
+        <div class="brand">
+            <button id="logoBtn" class="plainlink" aria-label="Go to feed">
+                <span class="logo">Infact</span>
+            </button>
+            <span class="subtitle">de‑sensationalized news</span>
+        </div>
+
+        <div class="search-container" id="searchContainer">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search news..."
+                aria-label="Search articles">
+            <button id="searchClear" class="search-clear" aria-label="Clear search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="actions">
+            <span id="lastFetched" class="time-tag" aria-live="polite">Fetched …</span>
+            <button id="aboutBtn" title="About Infact" aria-label="About">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9,9h0a3,3,0,0,1,6,0c0,2-3,3-3,3" />
+                    <path d="M12,17h0" />
+                </svg>
+            </button>
+            <button id="settingsBtn" title="Settings" aria-label="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12,1V5" />
+                    <path d="M12,19v4" />
+                    <path d="m4.22,4.22,2.83,2.83" />
+                    <path d="m16.95,16.95,2.83,2.83" />
+                    <path d="M1,12H5" />
+                    <path d="M19,12h4" />
+                    <path d="m4.22,19.78,2.83-2.83" />
+                    <path d="m16.95,7.05,2.83-2.83" />
+                </svg>
+            </button>
+            <button id="themeToggle" aria-pressed="false" title="Toggle dark/light theme" aria-label="Toggle theme">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <path d="M12,1V3" />
+                    <path d="M12,21v2" />
+                    <path d="m4.22,4.22,1.42,1.42" />
+                    <path d="m18.36,18.36,1.42,1.42" />
+                    <path d="M1,12H3" />
+                    <path d="M21,12h2" />
+                    <path d="m4.22,19.78,1.42-1.42" />
+                    <path d="m18.36,5.64,1.42-1.42" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tabstrip" role="navigation" aria-label="Sections">
+        <div class="tabs">
+            <button class="tab" data-tab="Trending" aria-selected="true">Trending</button>
+            <button class="tab" data-tab="All" aria-selected="false">All</button>
+            <button class="tab" data-tab="Blindspot" aria-selected="false">Blindspot</button>
+            <button class="tab" data-tab="Local" aria-selected="false">Local</button>
+            <button class="tab" data-tab="International" aria-selected="false">International</button>
+        </div>
+    </nav>
+
+    <!-- Page -->
+    <main class="page" role="main">
+        <!-- Feed View -->
+        <section id="feed" class="feed" aria-label="News feed">
+            <aside class="timeline" aria-label="Timeline">
+                <h3 class="block-title">Timeline</h3>
+                <div class="timeline-list">
+                    <div class="timeline-item"><span class="dot pos" aria-hidden="true"></span><span>Now</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>1h</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>3h</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>6h</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>12h</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>1d</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>3d</span></div>
+                    <div class="timeline-item"><span class="dot neu" aria-hidden="true"></span><span>1w</span></div>
+                </div>
+            </aside>
+            <div id="feedGrid" class="grid"></div>
+
+            <!-- Search Results -->
+            <div id="searchResults" class="search-results">
+                <div class="search-results-header">
+                    <div id="searchResultsCount" class="search-results-count"></div>
+                </div>
+                <div id="searchResultsList" class="search-results-list"></div>
+            </div>
+
+            <!-- Search Sidebar (Left during search) -->
+            <aside class="search-sidebar">
+                <h3 class="block-title">Search Filters</h3>
+                <div id="searchFilters" class="search-filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <select id="dateRangeFilter" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">Past Week</option>
+                            <option value="month">Past Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <div id="customDateInputs" class="date-inputs" style="display: none;">
+                            <input type="date" id="dateFrom" class="date-input" aria-label="From date">
+                            <input type="date" id="dateTo" class="date-input" aria-label="To date">
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Scope</label>
+                        <div class="filter-toggle">
+                            <button id="scopeLocal" class="active" data-scope="local">Local</button>
+                            <button id="scopeIntl" data-scope="international">International</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Category</label>
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="all">All Categories</option>
+                            <option value="trending">Trending</option>
+                            <option value="blindspot">Blindspot</option>
+                            <option value="local">Local</option>
+                            <option value="international">International</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Source Bias</label>
+                        <select id="biasFilter" class="filter-select">
+                            <option value="all">All Sources</option>
+                            <option value="balanced">Balanced Coverage</option>
+                            <option value="positive">Positive Tone</option>
+                            <option value="neutral">Neutral Tone</option>
+                            <option value="negative">Critical Tone</option>
+                        </select>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Feed Sidebar (Right) -->
+            <aside class="feed-sidebar">
+                <h3 class="block-title">News Providers</h3>
+                <div class="providers-list"></div>
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">R</div>
+                        <div>
+                            <div class="provider-name">Reuters</div>
+                            <div class="provider-domain">reuters.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">Owned by Thomson Reuters Corporation</div>
+                        <div class="provider-type">International news agency, financial data</div>
+                    </div>
+                </div>
+
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">G</div>
+                        <div>
+                            <div class="provider-name">The Guardian</div>
+                            <div class="provider-domain">theguardian.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">Guardian Media Group (Scott Trust)</div>
+                        <div class="provider-type">Independent, reader-funded journalism</div>
+                    </div>
+                </div>
+
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">W</div>
+                        <div>
+                            <div class="provider-name">Wall Street Journal</div>
+                            <div class="provider-domain">wsj.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">News Corp (Rupert Murdoch)</div>
+                        <div class="provider-type">Business and financial news</div>
+                    </div>
+                </div>
+
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">B</div>
+                        <div>
+                            <div class="provider-name">Bloomberg</div>
+                            <div class="provider-domain">bloomberg.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">Bloomberg L.P. (Michael Bloomberg)</div>
+                        <div class="provider-type">Financial news and data services</div>
+                    </div>
+                </div>
+
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">A</div>
+                        <div>
+                            <div class="provider-name">Associated Press</div>
+                            <div class="provider-domain">apnews.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">Non-profit cooperative</div>
+                        <div class="provider-type">Wire service, member-owned</div>
+                    </div>
+                </div>
+
+                <div class="provider">
+                    <div class="provider-header">
+                        <div class="favicon">F</div>
+                        <div>
+                            <div class="provider-name">Financial Times</div>
+                            <div class="provider-domain">ft.com</div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="provider-owner">Nikkei Inc.</div>
+                        <div class="provider-type">International business journalism</div>
+                    </div>
+                </div>
+                </div>
+
+
+            </aside>
+        </section>
+
+        <!-- Article View -->
+        <section id="articleView" class="article-view" aria-label="Article view">
+            <div class="backrow">
+                <button id="backToFeed" class="backlink">← Back</button>
+                <span class="muted">Reading</span>
+            </div>
+            <div class="article-grid">
+                <!-- Main -->
+                <article class="main">
+                    <h1 id="articleTitle" class="article-title">Title</h1>
+                    <div id="articleKeyFacts" class="keyfacts">
+                        <h3>Key Facts</h3>
+                        <ul id="articleFactsList"></ul>
+                    </div>
+                    <div id="articleContent" class="article-content"></div>
+
+                    <div id="coverageNote" class="coverage">Coverage Completeness: </div>
+                </article>
+
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <section class="expander" id="exp-context">
+                        <div class="exp-head" data-expander="context">
+                            <div class="exp-title">Context</div>
+                            <div class="exp-toggle">Expand</div>
+                        </div>
+                        <div class="exp-body" id="exp-body-context">
+                            <div class="exp-body-inner" id="contextContent"></div>
+                        </div>
+                    </section>
+
+                    <section class="expander" id="exp-background">
+                        <div class="exp-head" data-expander="background">
+                            <div class="exp-title">Background</div>
+                            <div class="exp-toggle">Expand</div>
+                        </div>
+                        <div class="exp-body" id="exp-body-background">
+                            <div class="exp-body-inner" id="backgroundContent"></div>
+                        </div>
+                    </section>
+
+                    <h4 class="block-title">Original Sources</h4>
+                    <div id="sourcesList" class="sources"></div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <dialog id="aboutModal" class="modal" aria-label="About Infact">
+        <div class="modal-card">
+            <h2>About Infact</h2>
+            <p>Infact aggregates reporting and foregrounds verifiable facts. The interface intentionally de‑emphasizes
+                sensational framing.</p>
+            <p class="muted">Design cues: are.na's wireframe minimalism meets Swiss grid discipline. Colors are
+                monochrome, with a restrained deep‑brown accent.</p>
+            <div class="modal-actions">
+                <button data-close="about">Close</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="settingsModal" class="modal" aria-label="Settings">
+        <div class="modal-card">
+            <h2>Settings</h2>
+            <p class="muted">These are placeholder settings.</p>
+            <div style="display:grid; gap:10px; margin-top:12px;">
+                <label style="display:flex; align-items:center; gap:10px;">
+                    <input id="chkReduceMotion" type="checkbox" /> Reduce motion
+                </label>
+                <label style="display:flex; align-items:center; gap:10px;">
+                    <input id="chkCompact" type="checkbox" /> Compact layout
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button data-close="settings">Close</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // ---------------------------------------------------------
+        // Data (dummy but realistic, news-related)
+        // ---------------------------------------------------------
+        let articles = [];
+
+        async function loadArticles() {
+            try {
+                const res = await fetch('articles.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`Failed to fetch articles.json: ${res.status}`);
+                const raw = await res.json();
+                articles = raw.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    excerpt: item.excerpt,
+                    bullets: item.bullets || [],
+                    category: item.category || [],
+                    time: hoursAgo(Number(item.hoursAgo || 0)),
+                    imageQuery: item.imageQuery || '',
+                    sources: item.sources || [],
+                    content: item.content || [],
+                    context: item.context || '',
+                    background: item.background || '',
+                    coverage: item.coverage || ''
+                }));
+            } catch (err) {
+                console.error('Failed to load articles:', err);
+                articles = [];
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Utilities
+        // ---------------------------------------------------------
+        function hoursAgo(h) {
+            const d = new Date(Date.now() - h * 60 * 60 * 1000);
+            return d.toISOString();
+        }
+
+        // Image loading - try multiple sources for better reliability
+        function getUnsplashImage(query, width = 400, height = 225) {
+            // Primary (may 503 intermittently). Keep but provide fallbacks.
+            const encodedQuery = encodeURIComponent(query || 'news');
+            return `https://source.unsplash.com/${width}x${height}/?${encodedQuery}`;
+        }
+
+        // Build a concise, content-relevant keyword string for image search
+        function buildImageQuery(article) {
+            if (article.imageQuery && article.imageQuery.trim()) return article.imageQuery.trim();
+            const parts = [];
+            if (article.title) parts.push(article.title);
+            if (Array.isArray(article.bullets) && article.bullets.length > 0) parts.push(article.bullets[0]);
+            if (Array.isArray(article.category)) parts.push(...article.category.slice(0, 1));
+            if (Array.isArray(article.sources) && article.sources.length > 0) parts.push(article.sources[0].name || '');
+            const text = parts.join(' ').toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            const tokens = text.split(' ').filter(Boolean);
+            // Keep the first 5-7 tokens to avoid over-broad queries
+            const limited = tokens.slice(0, 7).join(' ');
+            return limited || 'news';
+        }
+
+        // Build a list of candidate image URLs to try, in order
+        function getImageCandidates(article, width = 400, height = 225) {
+            const keyword = buildImageQuery(article);
+            const seed = encodeURIComponent(article.id || keyword);
+            const encoded = encodeURIComponent(keyword);
+            const candidates = [];
+
+            // 1) Explicit URL if provided in JSON
+            if (article.imageUrl && /^https?:\/\//i.test(article.imageUrl)) {
+                candidates.push(article.imageUrl);
+            }
+            // 2) Unsplash source (random by query)
+            candidates.push(getUnsplashImage(keyword, width, height));
+            // 3) LoremFlickr (query-based)
+            candidates.push(`https://loremflickr.com/${width}/${height}/${encoded}`);
+            // 4) Picsum with deterministic seed (doesn't support query)
+            candidates.push(`https://picsum.photos/seed/${seed}/${width}/${height}`);
+            // 5) Text placeholder
+            candidates.push(`https://placehold.co/${width}x${height}?text=${encodeURIComponent(keyword)}`);
+            return candidates;
+        }
+
+        // Wikimedia Commons caching to avoid repeated lookups
+        const wikiThumbCache = new Map();
+
+        // Wikimedia Commons: fetch a content-relevant thumbnail for the query
+        async function fetchWikimediaThumb(query, width = 400, height = 225) {
+            try {
+                const key = `${query}::${width}x${height}`;
+                if (wikiThumbCache.has(key)) return wikiThumbCache.get(key);
+                const maxDim = Math.max(width, height);
+                const api = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=${maxDim}&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1`;
+                const res = await fetch(api, { cache: 'no-store' });
+                if (!res.ok) return null;
+                const data = await res.json();
+                const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+                const first = pages[0];
+                const url = first && first.thumbnail && first.thumbnail.source ? first.thumbnail.source : null;
+                wikiThumbCache.set(key, url || null);
+                return url || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Build candidates with Wikimedia (if available) prioritized
+        async function getImageCandidatesAsync(article, width = 400, height = 225) {
+            const keyword = buildImageQuery(article);
+            const base = getImageCandidates(article, width, height);
+            const wiki = await fetchWikimediaThumb(keyword, width, height);
+            const list = [];
+            if (wiki) list.push(wiki);
+            // Append base list, avoiding duplicates
+            base.forEach(u => { if (!list.includes(u)) list.push(u); });
+            return list;
+        }
+
+        // Try loading the first image that succeeds
+        function loadFirstImage(urls) {
+            return new Promise((resolve, reject) => {
+                let index = 0;
+                function tryNext() {
+                    if (index >= urls.length) {
+                        return reject(new Error('All image sources failed'));
+                    }
+                    const url = urls[index++];
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => {
+                        console.warn('Image failed, trying fallback:', url);
+                        tryNext();
+                    };
+                    img.src = url;
+                }
+                tryNext();
+            });
+        }
+
+        // Provide a single helper to resolve an article image based on its imageQuery/title
+        function getArticleImage(article, width = 400, height = 225) {
+            const q = article.imageQuery || article.title || 'news';
+            return getUnsplashImage(q, width, height);
+        }
+
+        // Predefined images for each article to ensure they work
+        // (No longer required when loading from JSON + using imageQuery)
+        // ... existing code ...
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+        function timeAgo(iso) {
+            const now = new Date();
+            const then = new Date(iso);
+            const s = Math.floor((now - then) / 1000);
+            const mins = Math.floor(s / 60);
+            const hrs = Math.floor(mins / 60);
+            const days = Math.floor(hrs / 24);
+            if (s < 60) return 'just now';
+            if (mins < 60) return `${mins}m ago`;
+            if (hrs < 24) return `${hrs}h ago`;
+            return `${days}d ago`;
+        }
+        function el(tag, attrs = {}, ...children) {
+            const n = document.createElement(tag);
+            for (const [k, v] of Object.entries(attrs)) {
+                if (k === 'class') n.className = v;
+                else if (k === 'dataset') Object.assign(n.dataset, v);
+                else if (k.startsWith('on') && typeof v === 'function') n.addEventListener(k.slice(2), v);
+                else if (v !== null && v !== undefined) n.setAttribute(k, v);
+            }
+            for (const c of children) {
+                if (c == null) continue;
+                if (typeof c === 'string') n.appendChild(document.createTextNode(c));
+                else n.appendChild(c);
+            }
+            return n;
+        }
+        function faviconLetter(domain) {
+            const d = (domain || '').replace(/^www\./, '').trim();
+            return d ? d[0].toUpperCase() : '•';
+        }
+
+        // ---------------------------------------------------------
+        // Theme + Prefs
+        // ---------------------------------------------------------
+        const THEME_KEY = 'infact:theme';
+        const PREFS_KEY = 'infact:prefs';
+
+        function setTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            try { localStorage.setItem(THEME_KEY, t); } catch { }
+            const btn = document.getElementById('themeToggle');
+            btn.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
+        }
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme');
+            setTheme(cur === 'dark' ? 'light' : 'dark');
+        }
+        function loadTheme() {
+            let t = 'light';
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved) t = saved;
+                else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    t = 'dark';
+                }
+            } catch { }
+            setTheme(t);
+        }
+        function loadPrefs() {
+            try {
+                const p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+                return p;
+            } catch { return {}; }
+        }
+        function savePrefs(p) {
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { }
+        }
+
+        // ---------------------------------------------------------
+        // Search functionality
+        // ---------------------------------------------------------
+        let searchQuery = '';
+        let searchFilters = {
+            dateRange: 'all',
+            dateFrom: '',
+            dateTo: '',
+            scope: 'local',
+            category: 'all',
+            bias: 'all'
+        };
+
+        function performSearch(query) {
+            if (!query.trim()) {
+                hideSearchResults();
+                return;
+            }
+
+            const filtered = articles.filter(article => {
+                // Text search
+                const searchText = query.toLowerCase();
+                const titleMatch = article.title.toLowerCase().includes(searchText);
+                const excerptMatch = article.excerpt.toLowerCase().includes(searchText);
+                const bulletMatch = article.bullets.some(bullet => bullet.toLowerCase().includes(searchText));
+
+                if (!titleMatch && !excerptMatch && !bulletMatch) return false;
+
+                // Date filter
+                if (searchFilters.dateRange !== 'all') {
+                    const articleDate = new Date(article.time);
+                    const now = new Date();
+
+                    switch (searchFilters.dateRange) {
+                        case 'today':
+                            if (articleDate.toDateString() !== now.toDateString()) return false;
+                            break;
+                        case 'week':
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            if (articleDate < weekAgo) return false;
+                            break;
+                        case 'month':
+                            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                            if (articleDate < monthAgo) return false;
+                            break;
+                        case 'custom':
+                            if (searchFilters.dateFrom && articleDate < new Date(searchFilters.dateFrom)) return false;
+                            if (searchFilters.dateTo && articleDate > new Date(searchFilters.dateTo)) return false;
+                            break;
+                    }
+                }
+
+                // Scope filter
+                if (searchFilters.scope === 'local' && !article.category.includes('Local')) return false;
+                if (searchFilters.scope === 'international' && !article.category.includes('International')) return false;
+
+                // Category filter
+                if (searchFilters.category !== 'all') {
+                    const categoryMap = {
+                        'trending': 'Trending',
+                        'blindspot': 'Blindspot',
+                        'local': 'Local',
+                        'international': 'International'
+                    };
+                    if (!article.category.includes(categoryMap[searchFilters.category])) return false;
+                }
+
+                // Bias filter
+                if (searchFilters.bias !== 'all') {
+                    const biasCount = { pos: 0, neu: 0, neg: 0 };
+                    article.sources.forEach(s => biasCount[s.bias]++);
+
+                    switch (searchFilters.bias) {
+                        case 'balanced':
+                            if (biasCount.pos === 0 || biasCount.neg === 0) return false;
+                            break;
+                        case 'positive':
+                            if (biasCount.pos === 0) return false;
+                            break;
+                        case 'neutral':
+                            if (biasCount.neu === 0) return false;
+                            break;
+                        case 'negative':
+                            if (biasCount.neg === 0) return false;
+                            break;
+                    }
+                }
+
+                return true;
+            });
+
+            showSearchResults(filtered, query);
+        }
+
+        function showSearchResults(results, query) {
+            const searchResults = document.getElementById('searchResults');
+            const feedGrid = document.getElementById('feedGrid');
+            const searchContainer = document.getElementById('searchContainer');
+            const feedEl = document.getElementById('feed');
+
+            // Update UI state
+            searchResults.classList.add('active');
+            feedGrid.style.display = 'none';
+            searchContainer.classList.add('has-query');
+            feedEl.classList.add('search-active');
+
+            // Update results count
+            const countEl = document.getElementById('searchResultsCount');
+            countEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} for "${query}"`;
+
+            // Render results
+            const listEl = document.getElementById('searchResultsList');
+            listEl.innerHTML = '';
+
+            results.forEach((article, index) => {
+                const card = createSearchCard(article, index);
+                listEl.appendChild(card);
+            });
+        }
+
+        function createSearchCard(article, index) {
+            const card = el('div', {
+                class: 'search-card',
+                style: `animation-delay: ${index * 0.05}s`,
+                tabindex: '0'
+            });
+
+            // Image
+            const img = el('div', { class: 'img', 'aria-hidden': 'true' }, 'Loading...');
+            getImageCandidatesAsync(article, 120, 80)
+                .then(candidates => loadFirstImage(candidates))
+                .then(loadedImg => {
+                    img.innerHTML = '';
+                    img.appendChild(loadedImg);
+                })
+                .catch(() => {
+                    img.textContent = 'Image';
+                });
+
+            // Content
+            const content = el('div', { class: 'content' });
+            const title = el('h3', { class: 'title' }, article.title);
+            const excerpt = el('p', { class: 'excerpt' }, article.excerpt);
+
+            const meta = el('div', { class: 'meta' });
+            const sources = el('div', { class: 'sources' },
+                ...article.sources.slice(0, 3).map(s =>
+                    el('div', { class: 'favicon', title: s.domain }, faviconLetter(s.domain))
+                )
+            );
+            const timestamp = el('span', { class: 'timestamp' }, timeAgo(article.time));
+
+            meta.appendChild(sources);
+            meta.appendChild(timestamp);
+
+            content.appendChild(title);
+            content.appendChild(excerpt);
+            content.appendChild(meta);
+
+            // Sidebar info
+            const sidebarInfo = el('div', { class: 'sidebar-info' });
+            const biasCount = { neg: 0, neu: 0, pos: 0 };
+            article.sources.forEach(s => biasCount[s.bias]++);
+
+            const bias = el('div', { class: 'bias-mini', title: 'Source bias distribution' },
+                el('span', { class: 'dot neg', title: `Critical: ${biasCount.neg}` }),
+                el('span', { class: 'dot neu', title: `Neutral: ${biasCount.neu}` }),
+                el('span', { class: 'dot pos', title: `Positive: ${biasCount.pos}` })
+            );
+
+            sidebarInfo.appendChild(bias);
+
+            // Assemble card
+            card.appendChild(img);
+            card.appendChild(content);
+            card.appendChild(sidebarInfo);
+
+            // Click handler
+            card.addEventListener('click', () => openArticle(article.id));
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openArticle(article.id);
+                }
+            });
+
+            return card;
+        }
+
+        function hideSearchResults() {
+            const searchResults = document.getElementById('searchResults');
+            const feedGrid = document.getElementById('feedGrid');
+            const searchContainer = document.getElementById('searchContainer');
+            const feedEl = document.getElementById('feed');
+
+            searchResults.classList.remove('active');
+            feedGrid.style.display = '';
+            searchContainer.classList.remove('has-query');
+            feedEl.classList.remove('search-active');
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            searchQuery = '';
+            hideSearchResults();
+        }
+
+        function bindSearchEvents() {
+            const searchInput = document.getElementById('searchInput');
+            const searchClear = document.getElementById('searchClear');
+
+            // Search input
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                performSearch(searchQuery);
+            });
+
+            // Clear button
+            searchClear.addEventListener('click', clearSearch);
+
+            // Escape key to clear
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    clearSearch();
+                    searchInput.blur();
+                }
+            });
+
+            // Click outside to clear (on main content area)
+            document.addEventListener('click', (e) => {
+                if (searchQuery && !e.target.closest('.search-container') &&
+                    !e.target.closest('.search-results') && !e.target.closest('.search-filters')) {
+                    clearSearch();
+                }
+            });
+
+            // Filter controls
+            const dateRangeFilter = document.getElementById('dateRangeFilter');
+            const customDateInputs = document.getElementById('customDateInputs');
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const scopeButtons = document.querySelectorAll('[data-scope]');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const biasFilter = document.getElementById('biasFilter');
+
+            dateRangeFilter.addEventListener('change', (e) => {
+                searchFilters.dateRange = e.target.value;
+                customDateInputs.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+                if (searchQuery) performSearch(searchQuery);
+            });
+
+            dateFrom.addEventListener('change', (e) => {
+                searchFilters.dateFrom = e.target.value;
+                if (searchQuery) performSearch(searchQuery);
+            });
+
+            dateTo.addEventListener('change', (e) => {
+                searchFilters.dateTo = e.target.value;
+                if (searchQuery) performSearch(searchQuery);
+            });
+
+            scopeButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    scopeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    searchFilters.scope = btn.dataset.scope;
+                    if (searchQuery) performSearch(searchQuery);
+                });
+            });
+
+            categoryFilter.addEventListener('change', (e) => {
+                searchFilters.category = e.target.value;
+                if (searchQuery) performSearch(searchQuery);
+            });
+
+            biasFilter.addEventListener('change', (e) => {
+                searchFilters.bias = e.target.value;
+                if (searchQuery) performSearch(searchQuery);
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Rendering: Feed
+        // ---------------------------------------------------------
+        function renderFeed(filterTab = 'Trending') {
+            const grid = document.getElementById('feedGrid');
+
+            // Add transition class
+            grid.classList.add('transitioning');
+
+            setTimeout(() => {
+                grid.innerHTML = '';
+                const filtered = articles.filter(a => {
+                    if (filterTab === 'All') return true;
+                    return a.category.includes(filterTab);
+                });
+
+                // Determine featured cards (first and every 4th)
+                const featuredIndices = new Set([0, 4, 8]);
+                const tallIndices = new Set([2, 6]);
+
+                filtered.forEach((a, index) => {
+                    let cardClass = 'card parallax-container';
+                    if (featuredIndices.has(index)) cardClass += ' featured';
+                    if (tallIndices.has(index)) cardClass += ' tall';
+
+                    const card = el('article', {
+                        class: cardClass,
+                        role: 'article',
+                        tabindex: '0',
+                        style: `animation-delay: ${index * 0.1}s`
+                    });
+                    const img = el('div', { class: 'img loading', 'aria-hidden': 'true' }, 'Loading...');
+                    const body = el('div', { class: 'body' });
+
+                    // Load image asynchronously
+                    getImageCandidatesAsync(a, 400, 225)
+                        .then(candidates => loadFirstImage(candidates))
+                        .then(loadedImg => {
+                            img.innerHTML = '';
+                            img.classList.remove('loading');
+                            img.appendChild(loadedImg);
+                        })
+                        .catch(() => {
+                            // Fallback to a simple colored placeholder
+                            img.innerHTML = '';
+                            img.classList.remove('loading');
+                            img.style.background = `linear-gradient(135deg, #${Math.floor(Math.random() * 16777215).toString(16)}, #${Math.floor(Math.random() * 16777215).toString(16)})`;
+                            img.textContent = 'Image';
+                        });
+                    const title = el('div', { class: 'title' }, a.title);
+                    const excerpt = el('div', { class: 'excerpt' }, a.excerpt);
+                    const bottom = el('div', { class: 'bottom' });
+
+                    // Favicons (first 3)
+                    const favs = el('div', { class: 'favicons', 'aria-label': 'Source sites' },
+                        ...a.sources.slice(0, 3).map(s =>
+                            el('div', { class: 'favicon', title: s.domain, 'aria-label': s.domain }, faviconLetter(s.domain))
+                        )
+                    );
+
+                    // Bias mini legend based on distribution
+                    const counts = { neg: 0, neu: 0, pos: 0 };
+                    a.sources.forEach(s => counts[s.bias]++);
+                    const bias = el('div', { class: 'bias-mini', title: 'Bias indicators (source tones)' },
+                        el('span', {}, 'Bias:'),
+                        el('span', { class: 'dot neg', title: `Negative: ${counts.neg}` }),
+                        el('span', { class: 'dot neu', title: `Neutral: ${counts.neu}` }),
+                        el('span', { class: 'dot pos', title: `Positive: ${counts.pos}` })
+                    );
+
+                    const time = el('div', { class: 'timestamp' }, timeAgo(a.time));
+
+                    bottom.appendChild(favs);
+                    bottom.appendChild(bias);
+                    bottom.appendChild(time);
+
+                    body.appendChild(title);
+                    body.appendChild(excerpt);
+                    body.appendChild(bottom);
+
+                    // Hover facts
+                    const hoverfacts = el('div', { class: 'hoverfacts' },
+                        el('h5', {}, 'Key Facts'),
+                        el('ul', {},
+                            ...a.bullets.slice(0, 3).map(f => el('li', {}, f))
+                        )
+                    );
+
+                    card.appendChild(img);
+                    card.appendChild(body);
+                    card.appendChild(hoverfacts);
+
+                    // Interaction: open article on click/Enter
+                    card.addEventListener('click', () => openArticle(a.id));
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openArticle(a.id); }
+                    });
+
+                    grid.appendChild(card);
+                });
+
+                // Remove transition class after content is loaded
+                setTimeout(() => {
+                    grid.classList.remove('transitioning');
+                }, 50);
+
+                // Tabs active state
+                document.querySelectorAll('.tab').forEach(btn => {
+                    btn.setAttribute('aria-selected', btn.dataset.tab === filterTab ? 'true' : 'false');
+                });
+            }, 150);
+        }
+
+        // ---------------------------------------------------------
+        // Article View
+        // ---------------------------------------------------------
+        let currentArticle = null;
+
+        function openArticle(id) {
+            const a = articles.find(x => x.id === id);
+            if (!a) return;
+            currentArticle = a;
+
+            // Key Facts
+            const factsUl = document.getElementById('articleFactsList');
+            factsUl.innerHTML = '';
+            a.bullets.forEach(b => factsUl.appendChild(el('li', {}, b)));
+
+            // Title
+            document.getElementById('articleTitle').textContent = a.title;
+
+            // Content
+            const content = document.getElementById('articleContent');
+            content.innerHTML = '';
+            a.content.forEach(p => content.appendChild(el('p', {}, p)));
+
+            // Expanders content
+            setExpanderContent('context', a.context);
+            setExpanderContent('background', a.background);
+            collapseExpander('context', true);
+            collapseExpander('background', true);
+
+            // Coverage note
+            document.getElementById('coverageNote').textContent = 'Coverage Completeness: ' + a.coverage;
+
+            // Sources sidebar
+            const list = document.getElementById('sourcesList');
+            list.innerHTML = '';
+            a.sources.forEach((s, idx) => {
+                const src = el('div', { class: 'source' });
+                const head = el('div', { class: 'source-head', tabindex: '0' });
+
+                const fav = el('div', { class: 'favicon', title: s.domain, 'aria-label': s.domain }, faviconLetter(s.domain));
+                const st = el('div', { class: 'source-title' }, s.name);
+                const sd = el('div', { class: 'source-mute' }, s.domain);
+                const pill = el('div', { class: 'bias-pill' },
+                    el('span', {}, 'Bias'),
+                    el('span', { class: `dot ${s.bias}`, title: s.bias })
+                );
+
+                head.appendChild(fav);
+                head.appendChild(st);
+                head.appendChild(sd);
+                head.appendChild(pill);
+
+                const body = el('div', { class: 'source-body' });
+                const p = el('p', {}, `"${s.musings}"`);
+                body.appendChild(p);
+
+                head.addEventListener('click', () => toggleSource(src, body));
+                head.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSource(src, body); }
+                });
+
+                src.appendChild(head);
+                src.appendChild(body);
+                list.appendChild(src);
+            });
+
+            // Toggle views
+            document.getElementById('feed').classList.add('hidden');
+            const av = document.getElementById('articleView');
+            av.style.display = 'block';
+            av.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' });
+        }
+
+        function backToFeed() {
+            currentArticle = null;
+            document.getElementById('articleView').style.display = 'none';
+            document.getElementById('feed').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' });
+        }
+
+        // ---------------------------------------------------------
+        // Expanders (smooth height transitions)
+        // ---------------------------------------------------------
+        function setExpanderContent(key, text) {
+            const container = document.getElementById(`exp-body-${key}`);
+            const inner = container.querySelector('.exp-body-inner');
+            inner.innerHTML = '';
+            inner.appendChild(el('p', {}, text));
+        }
+        function expandExpander(key) {
+            const section = document.getElementById(`exp-${key}`);
+            const body = document.getElementById(`exp-body-${key}`);
+            const toggle = section.querySelector('.exp-toggle');
+            section.classList.add('expanded');
+            body.style.opacity = '1'; // Reset opacity when expanding
+            const target = body.scrollHeight;
+            body.style.height = target + 'px';
+            body.addEventListener('transitionend', function onEnd() {
+                if (section.classList.contains('expanded')) body.style.height = 'auto';
+                body.removeEventListener('transitionend', onEnd);
+            });
+            toggle.textContent = 'Collapse';
+        }
+        function collapseExpander(key, instant = false) {
+            const section = document.getElementById(`exp-${key}`);
+            const body = document.getElementById(`exp-body-${key}`);
+            const toggle = section.querySelector('.exp-toggle');
+            section.classList.remove('expanded');
+            if (instant) {
+                body.style.height = '0px';
+                body.style.opacity = '0';
+            } else {
+                const cur = body.getBoundingClientRect().height;
+                body.style.height = cur + 'px';
+                requestAnimationFrame(() => {
+                    body.style.height = '0px';
+                });
+            }
+            toggle.textContent = 'Expand';
+        }
+        function toggleExpander(key) {
+            const section = document.getElementById(`exp-${key}`);
+            const isOpen = section.classList.contains('expanded');
+            if (isOpen) collapseExpander(key);
+            else expandExpander(key);
+        }
+
+        // ---------------------------------------------------------
+        // Source expanders (sidebar)
+        // ---------------------------------------------------------
+        function toggleSource(root, body) {
+            const isOpen = root.classList.contains('expanded');
+            if (isOpen) {
+                const cur = body.getBoundingClientRect().height;
+                body.style.height = cur + 'px';
+                requestAnimationFrame(() => { body.style.height = '0px'; });
+                root.classList.remove('expanded');
+            } else {
+                root.classList.add('expanded');
+                const target = body.scrollHeight;
+                body.style.height = target + 'px';
+                body.addEventListener('transitionend', function onEnd() {
+                    if (root.classList.contains('expanded')) body.style.height = 'auto';
+                    body.removeEventListener('transitionend', onEnd);
+                });
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Tabs
+        // ---------------------------------------------------------
+        let activeTab = 'Trending';
+        function bindTabs() {
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeTab = btn.dataset.tab;
+                    renderFeed(activeTab);
+                });
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Time + Fetched
+        // ---------------------------------------------------------
+        function updateFetchedTime() {
+            const el = document.getElementById('lastFetched');
+            const now = new Date();
+            const pad = n => (n < 10 ? '0' + n : '' + n);
+            const s = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())} UTC`;
+            el.textContent = 'Fetched ' + s;
+        }
+
+        // ---------------------------------------------------------
+        // Modals
+        // ---------------------------------------------------------
+        function openModal(id) {
+            const d = document.getElementById(id);
+            d.setAttribute('open', '');
+            d.addEventListener('click', onBackdrop);
+            function onBackdrop(e) {
+                if (e.target === d) closeModal(id);
+            }
+            function onEsc(ev) {
+                if (ev.key === 'Escape') { closeModal(id); }
+            }
+            d._esc = onEsc;
+            document.addEventListener('keydown', onEsc);
+        }
+        function closeModal(id) {
+            const d = document.getElementById(id);
+            d.removeAttribute('open');
+            if (d._esc) document.removeEventListener('keydown', d._esc);
+        }
+
+        // ---------------------------------------------------------
+        // Settings (mock)
+        // ---------------------------------------------------------
+        function reduceMotion() {
+            const p = loadPrefs();
+            return !!p.reduceMotion;
+        }
+        function applyPrefs() {
+            const p = loadPrefs();
+            document.getElementById('chkReduceMotion').checked = !!p.reduceMotion;
+            document.getElementById('chkCompact').checked = !!p.compact;
+
+            // Apply compact layout toggles
+            document.documentElement.style.setProperty('--gutter', p.compact ? '16px' : '24px');
+        }
+        function bindSettings() {
+            const chkReduce = document.getElementById('chkReduceMotion');
+            const chkCompact = document.getElementById('chkCompact');
+            chkReduce.addEventListener('change', () => {
+                const p = loadPrefs(); p.reduceMotion = chkReduce.checked; savePrefs(p);
+            });
+            chkCompact.addEventListener('change', () => {
+                const p = loadPrefs(); p.compact = chkCompact.checked; savePrefs(p); applyPrefs();
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Parallax Effect
+        // ---------------------------------------------------------
+        function initParallax() {
+            let ticking = false;
+
+            function updateParallax() {
+                const scrolled = window.pageYOffset;
+                const parallaxElements = document.querySelectorAll('.parallax-container');
+
+                parallaxElements.forEach((element, index) => {
+                    const rect = element.getBoundingClientRect();
+                    const speed = 0.02; // Very subtle movement
+                    const yPos = -(scrolled * speed * (index % 3 + 1));
+                    element.style.transform = `translate3d(0, ${yPos}px, 0)`;
+                });
+
+                ticking = false;
+            }
+
+            function requestTick() {
+                if (!ticking && !reduceMotion()) {
+                    requestAnimationFrame(updateParallax);
+                    ticking = true;
+                }
+            }
+
+            window.addEventListener('scroll', requestTick);
+        }
+
+        // ---------------------------------------------------------
+        // Init
+        // ---------------------------------------------------------
+        async function init() {
+            loadTheme();
+            applyPrefs();
+            await loadArticles();
+            renderFeed('Trending');
+            bindTabs();
+            bindSearchEvents();
+            updateFetchedTime();
+            initParallax();
+
+            // Topbar actions
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('logoBtn').addEventListener('click', () => {
+                clearSearch();
+                backToFeed();
+            });
+            document.getElementById('backToFeed').addEventListener('click', backToFeed);
+
+            // Expanders
+            document.querySelector('[data-expander="context"]').addEventListener('click', () => toggleExpander('context'));
+            document.querySelector('[data-expander="background"]').addEventListener('click', () => toggleExpander('background'));
+
+            // Modals
+            document.getElementById('aboutBtn').addEventListener('click', () => openModal('aboutModal'));
+            document.getElementById('settingsBtn').addEventListener('click', () => { openModal('settingsModal'); applyPrefs(); bindSettings(); });
+            document.querySelectorAll('[data-close="about"]').forEach(b => b.addEventListener('click', () => closeModal('aboutModal')));
+            document.querySelectorAll('[data-close="settings"]').forEach(b => b.addEventListener('click', () => closeModal('settingsModal')));
+
+            // Periodically update timestamps
+            setInterval(() => {
+                document.querySelectorAll('.timestamp').forEach((node, i) => {
+                    // naive redraw by re-rendering feed under active tab every 60s, keeps it simple and consistent
+                });
+                renderFeed(activeTab);
+            }, 60000);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

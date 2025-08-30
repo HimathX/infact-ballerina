@@ -119,6 +119,10 @@ EOF
 
 For detailed setup instructions, please refer to the [`ballerina-gateway/README.md`](./ballerina-gateway/README.md).
 
+#### API Testing with Postman
+
+For easy API testing and exploration, import the Postman collection: [InFact API Collection](https://himathnimpura.postman.co/workspace/My-Workspace~f7b530ba-0fff-4044-8f08-ac0d52847b5c/collection/undefined?action=share&creator=44579841)
+
 #### Python Pipeline Configuration
 
 For detailed setup instructions, please refer to the [`python-pipeline/README.md`](./python-pipeline/README.md).
