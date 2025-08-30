@@ -178,9 +178,9 @@ public function getArticleStats() returns types:ArticleStatsResponse|error {
     };
 }
 
-// Get single article by ObjectId
+// Get single article by ObjectId - FIXED VERSION
 public function getArticleById(string articleId) returns types:SingleArticleResponse|types:ErrorResponse|error {
-    // Validate ObjectId format
+    // Validate ObjectId format first
     if !isValidObjectId(articleId) {
         return {
             success: false,
@@ -191,35 +191,46 @@ public function getArticleById(string articleId) returns types:SingleArticleResp
     
     mongodb:Collection newsCollection = check config:getNewsCollection();
     
+    // Create proper MongoDB ObjectId query
     map<json> queryFilter = {
         "_id": {"$oid": articleId}
     };
     
-    stream<types:NewsArticle, error?> articleStream = check newsCollection->find(
-        filter = queryFilter, 
+    // Try to find the article using the configured collection
+    types:NewsArticle? foundArticle = check newsCollection->findOne(
+        filter = queryFilter,
         targetType = types:NewsArticle
     );
     
-    // Convert stream to array
-    types:NewsArticle[] articles = [];
-    record {| types:NewsArticle value; |}? streamResult = check articleStream.next();
-    while streamResult is record {| types:NewsArticle value; |} {
-        articles.push(streamResult.value);
-        streamResult = check articleStream.next();
-    }
-    check articleStream.close();
-    
-    if articles.length() == 0 {
+    if foundArticle is types:NewsArticle {
         return {
-            success: false,
-            message: "Article not found",
-            error_code: "ARTICLE_NOT_FOUND"
+            success: true,
+            article: foundArticle
         };
     }
     
+    // If not found with ObjectId format, try simple string format as fallback
+    map<json> alternativeFilter = {
+        "_id": articleId
+    };
+    
+    types:NewsArticle? alternativeResult = check newsCollection->findOne(
+        filter = alternativeFilter,
+        targetType = types:NewsArticle
+    );
+    
+    if alternativeResult is types:NewsArticle {
+        return {
+            success: true,
+            article: alternativeResult
+        };
+    }
+    
+    // Article not found
     return {
-        success: true,
-        article: articles[0]
+        success: false,
+        message: "Article not found",
+        error_code: "ARTICLE_NOT_FOUND"
     };
 }
 

@@ -15,16 +15,16 @@ public type ArticleProcessingRequest record {|
     boolean force_new_clusters;
 |};
 
-// Article reference in cluster details
+// Article reference in cluster details - FIXED to handle null article_id
 public type ArticleReference record {|
-    string article_id;
+    string? article_id;  // Changed from string to string? to handle null values
     string title;
     string 'source;
     string url;
     string published_at;
 |};
 
-// Cluster details
+// Cluster details - FIXED to include missing fields from Python response
 public type ClusterDetails record {|
     string[] facts;
     string[] musings;
@@ -38,6 +38,8 @@ public type ClusterDetails record {|
     decimal[] similarity_scores;
     string created_at;
     string updated_at;
+    string? image_url;        // Added missing field
+    string[]? article_urls;   // Added missing field
 |};
 
 // Storage result for each cluster

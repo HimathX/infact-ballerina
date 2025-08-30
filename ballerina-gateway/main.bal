@@ -175,18 +175,6 @@ service /news on new http:Listener(9090, {
         _ = start processRssExtractionAsync(requestBody);
     }
 
-    // Get all articles endpoint
-    resource function get articles(http:Caller caller, http:Request request) returns error? {
-        types:NewsArticle[] articles = check utils:getAllNewsArticles();
-        
-        json response = {
-            "status": "success",
-            "articles": articles,
-            "count": articles.length()
-        };
-        
-        check caller->respond(response);
-    }
 
     // Get article count endpoint
     resource function get count(http:Caller caller, http:Request request) returns error? {
@@ -201,7 +189,7 @@ service /news on new http:Listener(9090, {
     }
 
     // GET /articles - List extracted articles with pagination and sorting
-    resource function get .(@http:Query int? 'limit, @http:Query int? skip, 
+    resource function get articles(@http:Query int? 'limit, @http:Query int? skip, 
                            @http:Query string? sort_by, @http:Query int? sort_order) 
                            returns types:ArticlesListResponse|types:ErrorResponse|http:InternalServerError {
         

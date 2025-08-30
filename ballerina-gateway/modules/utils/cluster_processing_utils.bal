@@ -2,47 +2,109 @@ import ballerina/http;
 import ballerina/log;
 import ballerina_gateway.types;
 
-// HTTP client for article processing service with 15-minute timeout - Made isolated
+// HTTP client for article processing service with 15-minute timeout
 final http:Client articleProcessingClient = check new ("http://127.0.0.1:8091", {
-    timeout: 9000.0  // 15 minutes timeout
+    timeout: 900.0,  // 15 minutes timeout
+    httpVersion: "1.1"
 });
 
-// HTTP client for auto processing service with 15-minute timeout - Made isolated
+// HTTP client for auto processing service with 15-minute timeout
 final http:Client autoProcessingClient = check new ("http://127.0.0.1:8091", {
-    timeout: 9000.0  // 15 minutes timeout
+    timeout: 900.0,  // 15 minutes timeout
+    httpVersion: "1.1"
 });
 
-// Forward article processing request to Python service - Removed isolated due to HTTP client access
+// Forward article processing request to Python service - SIMPLIFIED VERSION
 public function forwardArticleProcessingRequest(types:ArticleProcessingRequest request) returns types:ArticleProcessingResponse|types:ClusterProcessingErrorResponse|error {
     
-    // Convert request to JSON for forwarding
-    json requestPayload = request.toJson();
+    // Manually construct JSON payload to ensure proper format
+    json[] articlesJson = [];
+    foreach types:ProcessingArticle article in request.articles {
+        json articleJson = {
+            "title": article.title,
+            "content": article.content,
+            "source": article.'source,
+            "published_at": article.published_at,
+            "url": article.url,
+            "image_url": article.image_url
+        };
+        articlesJson.push(articleJson);
+    }
     
-    // Forward request to Python service
-    http:Response|error response = articleProcessingClient->post("/process-with-storage", requestPayload, 
-        headers = {"Content-Type": "application/json"});
+    json requestPayload = {
+        "articles": articlesJson,
+        "n_clusters": request.n_clusters,
+        "store_clusters": request.store_clusters,
+        "force_new_clusters": request.force_new_clusters
+    };
+    
+    log:printInfo("Sending request to Python service", payload_size = requestPayload.toString().length());
+    log:printInfo("Request payload preview", payload_preview = requestPayload.toString().substring(0, 200) + "...");
+    
+    // Use the simpler approach - pass JSON directly with headers
+    http:Response|error response = articleProcessingClient->post("/process-with-storage", requestPayload, {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Ballerina-HTTP-Client"
+    });
     
     if response is error {
         log:printError("Error calling article processing service", 'error = response);
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "Article processing service is unavailable",
+            message: "Article processing service is unavailable: " + response.message(),
             error_code: "SERVICE_UNAVAILABLE",
             task_id: ()
         };
         return errorResponse;
     }
     
+    // Log response status for debugging
+    log:printInfo("Python service response", status_code = response.statusCode);
+    
     // Check HTTP status
     if response.statusCode != 200 {
         json|error errorPayload = response.getJsonPayload();
-        string errorMessage = "Article processing failed";
+        string errorMessage = "Article processing failed with status: " + response.statusCode.toString();
         
-        if errorPayload is json && errorPayload is map<json> {
-            json messageField = errorPayload["message"];
-            if messageField is string {
-                errorMessage = messageField;
+        if errorPayload is json {
+            log:printError("Python service error response", error_payload = errorPayload.toString());
+            if errorPayload is map<json> {
+                json messageField = errorPayload["message"];
+                if messageField is string {
+                    errorMessage = messageField;
+                } else {
+                    json detailField = errorPayload["detail"];
+                    if detailField is string {
+                        errorMessage = detailField;
+                    } else if detailField is json[] {
+                        // Handle FastAPI validation errors
+                        string[] validationErrors = [];
+                        foreach json detail in detailField {
+                            if detail is map<json> {
+                                json msgField = detail["msg"];
+                                json locField = detail["loc"];
+                                if msgField is string && locField is json[] {
+                                    string location = "";
+                                    foreach json loc in locField {
+                                        if loc is string {
+                                            location += loc + ".";
+                                        } else if loc is int {
+                                            location += loc.toString() + ".";
+                                        }
+                                    }
+                                    validationErrors.push(location + ": " + msgField);
+                                }
+                            }
+                        }
+                        if validationErrors.length() > 0 {
+                            errorMessage = "Validation errors: " + string:'join(", ", ...validationErrors);
+                        }
+                    }
+                }
             }
+        } else {
+            log:printError("Failed to parse error response", parse_error = errorPayload.toString());
         }
         
         types:ClusterProcessingErrorResponse errorResponse = {
@@ -67,13 +129,15 @@ public function forwardArticleProcessingRequest(types:ArticleProcessingRequest r
         return errorResponse;
     }
     
+    log:printInfo("Received successful response from Python service", response_size = responsePayload.toString().length());
+    
     // Convert JSON response to typed response
     types:ArticleProcessingResponse|error typedResponse = responsePayload.cloneWithType(types:ArticleProcessingResponse);
     if typedResponse is error {
-        log:printError("Error converting article processing response", 'error = typedResponse);
+        log:printError("Error converting article processing response", 'error = typedResponse, response = responsePayload.toString());
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "Invalid response format from processing service",
+            message: "Invalid response format from processing service: " + typedResponse.message(),
             error_code: "RESPONSE_FORMAT_ERROR",
             task_id: ()
         };
@@ -83,7 +147,7 @@ public function forwardArticleProcessingRequest(types:ArticleProcessingRequest r
     return typedResponse;
 }
 
-// Forward auto processing request to Python service - Removed isolated due to HTTP client access
+// Forward auto processing request to Python service
 public function forwardAutoProcessingRequest(types:AutoProcessingQueryParams queryParams) returns types:AutoProcessingResponse|types:ClusterProcessingErrorResponse|error {
     
     // Build query parameters
@@ -109,30 +173,48 @@ public function forwardAutoProcessingRequest(types:AutoProcessingQueryParams que
     string queryString = buildClusterQueryString(params);
     string endpoint = "/scrape-process-store" + queryString;
     
+    log:printInfo("Calling auto processing endpoint", endpoint = endpoint);
+    
+    // Use empty JSON object as body for POST request
+    json emptyBody = {};
+    
     // Forward request to Python service
-    http:Response|error response = autoProcessingClient->post(endpoint, {}, 
-        headers = {"Content-Type": "application/json"});
+    http:Response|error response = autoProcessingClient->post(endpoint, emptyBody, {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Ballerina-HTTP-Client"
+    });
     
     if response is error {
         log:printError("Error calling auto processing service", 'error = response);
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "Auto processing service is unavailable",
+            message: "Auto processing service is unavailable: " + response.message(),
             error_code: "SERVICE_UNAVAILABLE",
             task_id: ()
         };
         return errorResponse;
     }
     
+    log:printInfo("Auto processing service response", status_code = response.statusCode);
+    
     // Check HTTP status
     if response.statusCode != 200 {
         json|error errorPayload = response.getJsonPayload();
-        string errorMessage = "Auto processing failed";
+        string errorMessage = "Auto processing failed with status: " + response.statusCode.toString();
         
-        if errorPayload is json && errorPayload is map<json> {
-            json messageField = errorPayload["message"];
-            if messageField is string {
-                errorMessage = messageField;
+        if errorPayload is json {
+            log:printError("Auto processing service error response", error_payload = errorPayload.toString());
+            if errorPayload is map<json> {
+                json messageField = errorPayload["message"];
+                if messageField is string {
+                    errorMessage = messageField;
+                } else {
+                    json detailField = errorPayload["detail"];
+                    if detailField is string {
+                        errorMessage = detailField;
+                    }
+                }
             }
         }
         
@@ -158,13 +240,15 @@ public function forwardAutoProcessingRequest(types:AutoProcessingQueryParams que
         return errorResponse;
     }
     
+    log:printInfo("Received successful auto processing response", response_size = responsePayload.toString().length());
+    
     // Convert JSON response to typed response
     types:AutoProcessingResponse|error typedResponse = responsePayload.cloneWithType(types:AutoProcessingResponse);
     if typedResponse is error {
-        log:printError("Error converting auto processing response", 'error = typedResponse);
+        log:printError("Error converting auto processing response", 'error = typedResponse, response = responsePayload.toString());
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "Invalid response format from processing service",
+            message: "Invalid response format from processing service: " + typedResponse.message(),
             error_code: "RESPONSE_FORMAT_ERROR",
             task_id: ()
         };
@@ -174,7 +258,7 @@ public function forwardAutoProcessingRequest(types:AutoProcessingQueryParams que
     return typedResponse;
 }
 
-// Validate article processing request - Can remain isolated as it's pure function
+// Validate article processing request - Enhanced validation
 public isolated function validateArticleProcessingRequest(types:ArticleProcessingRequest request) returns types:ClusterProcessingErrorResponse? {
     
     // Validate articles array
@@ -188,11 +272,22 @@ public isolated function validateArticleProcessingRequest(types:ArticleProcessin
         return errorResponse;
     }
     
-    // Validate n_clusters
-    if request.n_clusters < 1 || request.n_clusters > 50 {
+    // Minimum 2 articles required for clustering
+    if request.articles.length() < 2 {
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "n_clusters must be between 1 and 50",
+            message: "At least 2 articles are required for clustering",
+            error_code: "INSUFFICIENT_ARTICLES",
+            task_id: ()
+        };
+        return errorResponse;
+    }
+    
+    // Validate n_clusters
+    if request.n_clusters < 2 || request.n_clusters > 20 {
+        types:ClusterProcessingErrorResponse errorResponse = {
+            success: false,
+            message: "n_clusters must be between 2 and 20",
             error_code: "INVALID_CLUSTER_COUNT",
             task_id: ()
         };
@@ -223,6 +318,17 @@ public isolated function validateArticleProcessingRequest(types:ArticleProcessin
             return errorResponse;
         }
         
+        // Validate content length (minimum 50 characters as per Python service)
+        if article.content.trim().length() < 50 {
+            types:ClusterProcessingErrorResponse errorResponse = {
+                success: false,
+                message: string `Article at index ${i} content must be at least 50 characters long`,
+                error_code: "CONTENT_TOO_SHORT",
+                task_id: ()
+            };
+            return errorResponse;
+        }
+        
         if article.'source.trim() == "" {
             types:ClusterProcessingErrorResponse errorResponse = {
                 success: false,
@@ -242,19 +348,40 @@ public isolated function validateArticleProcessingRequest(types:ArticleProcessin
             };
             return errorResponse;
         }
+        
+        // Validate published_at format if provided
+        if article.published_at.trim() != "" {
+            // Basic ISO date format validation
+            if !isValidISODateFormat(article.published_at) {
+                types:ClusterProcessingErrorResponse errorResponse = {
+                    success: false,
+                    message: string `Article at index ${i} has invalid published_at format. Expected ISO format (e.g., 2025-08-29T14:30:00Z)`,
+                    error_code: "INVALID_DATE_FORMAT",
+                    task_id: ()
+                };
+                return errorResponse;
+            }
+        }
     }
     
     return ();
 }
 
-// Validate auto processing query parameters - Can remain isolated as it's pure function
+// Helper function to validate ISO date format
+isolated function isValidISODateFormat(string dateString) returns boolean {
+    // Basic regex pattern for ISO 8601 format
+    string:RegExp isoPattern = re `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$`;
+    return isoPattern.isFullMatch(dateString);
+}
+
+// Validate auto processing query parameters
 public isolated function validateAutoProcessingParams(types:AutoProcessingQueryParams queryParams) returns types:ClusterProcessingErrorResponse? {
     
     // Validate n_clusters
-    if queryParams.n_clusters is int && (queryParams.n_clusters < 1 || queryParams.n_clusters > 50) {
+    if queryParams.n_clusters is int && (queryParams.n_clusters < 2 || queryParams.n_clusters > 20) {
         types:ClusterProcessingErrorResponse errorResponse = {
             success: false,
-            message: "n_clusters must be between 1 and 50",
+            message: "n_clusters must be between 2 and 20",
             error_code: "INVALID_CLUSTER_COUNT",
             task_id: ()
         };
@@ -286,7 +413,7 @@ public isolated function validateAutoProcessingParams(types:AutoProcessingQueryP
     return ();
 }
 
-// Helper function to build query string - Can remain isolated as it's pure function
+// Helper function to build query string
 isolated function buildClusterQueryString(map<string> params) returns string {
     string[] pairs = [];
     foreach string key in params.keys() {
