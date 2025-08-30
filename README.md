@@ -14,7 +14,19 @@ Built with **Ballerina** for robust API gateway services and **Python FastAPI** 
 
 🔗 **[Original InFact Implementation](https://github.com/LazySeaHorse/Infact)**
 
+<img width="1086" height="403" alt="Screenshot 2025-08-31 000610" src="https://github.com/user-attachments/assets/506ed15e-d6b5-408c-95b7-21fea0f96b99" />
+
+<img width="1085" height="600" alt="Screenshot 2025-08-31 000646" src="https://github.com/user-attachments/assets/03ee25b2-cf54-4c4e-bae9-884c7b555b82" />
+
+<img width="1087" height="403" alt="Screenshot 2025-08-31 000659" src="https://github.com/user-attachments/assets/8d3f72f3-38b5-4566-ab2c-004ce7924925" />
+
+<img width="1088" height="570" alt="Screenshot 2025-08-31 001255" src="https://github.com/user-attachments/assets/c347c048-9fbf-4b3a-9558-c12bc029a679" />
+
+
+<img width="1088" height="414" alt="Screenshot 2025-08-31 000727" src="https://github.com/user-attachments/assets/900f8c0e-30f7-4685-9fd5-8f966edf1ea7" />
+
 ---
+
 
 ## 🔍 Overview
 
