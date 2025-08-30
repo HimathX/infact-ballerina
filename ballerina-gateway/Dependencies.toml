@@ -17,7 +17,8 @@ dependencies = [
 	{org = "ballerina", name = "log"},
 	{org = "ballerina", name = "time"},
 	{org = "ballerinai", name = "observe"},
-	{org = "ballerinax", name = "mongodb"}
+	{org = "ballerinax", name = "mongodb"},
+	{org = "ballerinax", name = "wso2.controlplane"}
 ]
 modules = [
 	{org = "asus", packageName = "ballerina_gateway", moduleName = "ballerina_gateway"},
@@ -344,5 +345,24 @@ dependencies = [
 ]
 modules = [
 	{org = "ballerinax", packageName = "mongodb", moduleName = "mongodb"}
+]
+
+[[package]]
+org = "ballerinax"
+name = "wso2.controlplane"
+version = "1.1.0"
+dependencies = [
+	{org = "ballerina", name = "file"},
+	{org = "ballerina", name = "http"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "jwt"},
+	{org = "ballerina", name = "lang.array"},
+	{org = "ballerina", name = "lang.runtime"},
+	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "os"},
+	{org = "ballerina", name = "uuid"}
+]
+modules = [
+	{org = "ballerinax", packageName = "wso2.controlplane", moduleName = "wso2.controlplane"}
 ]
 
