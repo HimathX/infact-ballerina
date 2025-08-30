@@ -237,7 +237,7 @@ class NLPProcessor:
                 factual_summary=factual_summary,
                 contextual_analysis=contextual_analysis,
                 similarity_scores=similarity_scores,
-                image_url=cluster_image_url,
+                image_url=cluster_image_url,  # ✅ This is being set
                 sources=unique_sources,  # Add sources
                 article_urls=article_urls,  # Add URLs
                 source_counts=source_counts  # Add source counts

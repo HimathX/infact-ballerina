@@ -72,22 +72,18 @@ class ImageService:
             return None
     
     def get_cluster_image_url(self, articles: List[Any], cluster_name: str) -> Optional[str]:
-        """
-        Get image URL for a cluster:
-        1. First check if any article has an image_url (excluding France24)
-        2. If not found, search Unsplash using cluster keywords
-        """
-        # Step 1: Check articles for existing image URLs
-        for article in articles:
-            if hasattr(article, 'image_url') and article.image_url:
-                # Check if it's not from France24
-                if 'france24' not in article.image_url.lower():
+        """Get appropriate image URL for cluster"""
+        try:
+            # First try to use existing article images
+            for article in articles:
+                if hasattr(article, 'image_url') and article.image_url:
+                    logger.info(f"Using existing article image for cluster: {cluster_name}")
                     return article.image_url
-        
-        # Step 2: Search Unsplash using cluster name/keywords
-        if cluster_name:
-            # Clean cluster name for search
-            search_query = cluster_name.replace('_', ' ').replace('-', ' ')
-            return self.search_images(search_query)
-        
-        return None
+            
+            # If no article images, search Unsplash
+            logger.info(f"Searching Unsplash for cluster image: {cluster_name}")
+            return self.search_images(cluster_name)
+            
+        except Exception as e:
+            logger.error(f"Error getting cluster image: {str(e)}")
+            return None

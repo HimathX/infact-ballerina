@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from typing import Optional
 import logging
+from bson import ObjectId
 from schemas.cluster_storage import (
     ClusterListResponse, ClusterSearchRequest
 )
@@ -44,9 +45,32 @@ async def get_cluster_by_id(cluster_id: str):
         if not cluster:
             raise HTTPException(status_code=404, detail=f"Cluster {cluster_id} not found")
         
+        # Ensure all fields are included in the response with proper defaults
+        cluster_response = {
+            "_id": str(cluster.get("_id", "")),
+            "cluster_name": cluster.get("cluster_name", ""),
+            "facts": cluster.get("facts", []),
+            "musings": cluster.get("musings", []),
+            "generated_article": cluster.get("generated_article", ""),
+            "factual_summary": cluster.get("factual_summary", ""),
+            "contextual_analysis": cluster.get("contextual_analysis", ""),
+            "context": cluster.get("context", ""),
+            "background": cluster.get("background", ""),
+            "image_url": cluster.get("image_url"),
+            "articles_count": cluster.get("articles_count", 0),
+            "sources": cluster.get("sources", []),
+            "article_urls": cluster.get("article_urls", []),
+            "article_ids": cluster.get("article_ids", []),
+            "keywords": cluster.get("keywords", []),
+            "similarity_scores": cluster.get("similarity_scores", []),
+            "source_counts": cluster.get("source_counts", {}),
+            "created_at": cluster.get("created_at").isoformat() if cluster.get("created_at") else None,
+            "updated_at": cluster.get("updated_at").isoformat() if cluster.get("updated_at") else None
+        }
+        
         return {
             "success": True,
-            "cluster": cluster,
+            "cluster": cluster_response,
             "timestamp": datetime.now().isoformat()
         }
         
@@ -86,16 +110,23 @@ async def get_cluster_articles(
         if not cluster:
             raise HTTPException(status_code=404, detail=f"Cluster {cluster_id} not found")
         
-        # Get article IDs from cluster
-        article_ids = cluster.get('article_ids', [])
-        if not article_ids:
+        # Get article IDs from cluster (convert string IDs back to ObjectIds)
+        article_ids_str = cluster.get('article_ids', [])
+        if not article_ids_str:
             return {
                 "success": True,
-                "cluster_name": cluster['cluster_name'],
+                "cluster_name": cluster.get('cluster_name', ''),
                 "articles": [],
                 "total_count": 0,
                 "timestamp": datetime.now().isoformat()
             }
+        
+        # Convert string IDs to ObjectIds for querying
+        try:
+            article_ids = [ObjectId(aid) for aid in article_ids_str if aid]
+        except Exception as e:
+            logger.error(f"Error converting article IDs: {e}")
+            article_ids = []
         
         # Query articles from articles collection
         cursor = article_collection.find(
@@ -108,24 +139,27 @@ async def get_cluster_articles(
             published_at = doc.get('published_at')
             
             article = {
+                "_id": str(doc.get('_id')),
                 "title": doc.get('title', ''),
                 "content": doc.get('content', ''),
-                "source": doc.get('source'),
+                "source": doc.get('source', ''),
                 "published_at": published_at.isoformat() if published_at else None,
                 "url": doc.get('url'),
-                "cluster_id": str(doc.get('cluster_id')),
-                "_id": str(doc.get('_id'))
+                "image_url": doc.get('image_url'),
+                "cluster_id": cluster_id
             }
             articles.append(article)
         
         # Get total count
-        total_count = len(article_ids)
+        total_count = len(article_ids_str)
         
         return {
             "success": True,
-            "cluster_name": cluster['cluster_name'],
+            "cluster_name": cluster.get('cluster_name', ''),
+            "cluster_id": cluster_id,
             "articles": articles,
             "total_count": total_count,
+            "retrieved_count": len(articles),
             "page": {
                 "total_pages": 1
             },
@@ -151,17 +185,23 @@ async def get_cluster_summary(cluster_id: str):
         
         # Get article count
         article_ids = cluster.get('article_ids', [])
-        articles_count = len(article_ids)
+        articles_count = cluster.get('articles_count', len(article_ids))
         
         # Get facts and musings counts
-        facts_count = len(cluster.get('facts', []))
-        musings_count = len(cluster.get('musings', []))
+        facts = cluster.get('facts', [])
+        musings = cluster.get('musings', [])
+        facts_count = len(facts)
+        musings_count = len(musings)
         
         # Get top keywords (limit to 10)
         keywords = cluster.get('keywords', [])[:10]
         
-        # Get sources
+        # Get sources and source counts
         sources = cluster.get('sources', [])
+        source_counts = cluster.get('source_counts', {})
+        
+        # Get URLs
+        article_urls = cluster.get('article_urls', [])
         
         summary = {
             "cluster_id": cluster_id,
@@ -171,6 +211,12 @@ async def get_cluster_summary(cluster_id: str):
             "musings_count": musings_count,
             "keywords": keywords,
             "sources": sources,
+            "source_counts": source_counts,
+            "article_urls_count": len(article_urls),
+            "has_generated_article": bool(cluster.get('generated_article')),
+            "has_factual_summary": bool(cluster.get('factual_summary')),
+            "has_contextual_analysis": bool(cluster.get('contextual_analysis')),
+            "has_image": bool(cluster.get('image_url')),
             "created_at": cluster.get('created_at'),
             "updated_at": cluster.get('updated_at')
         }
@@ -201,14 +247,29 @@ async def get_clusters_by_source(
 ):
     """Get clusters that contain articles from a specific source"""
     try:
-        # Use cluster storage manager to find clusters by source
-        clusters = cluster_storage.get_clusters_by_source(source=source, limit=limit)   # type: ignore
+        # Search clusters that have the source in their sources array
+        clusters = cluster_storage.clusters_collection.find({
+            "sources": {"$regex": source, "$options": "i"}
+        }).sort("updated_at", -1).limit(limit)
+        
+        clusters_list = []
+        for cluster in clusters:
+            cluster["_id"] = str(cluster["_id"])
+            if "article_ids" in cluster:
+                cluster["article_ids"] = [str(aid) for aid in cluster["article_ids"]]
+            
+            # Format dates
+            for field in ['created_at', 'updated_at']:
+                if cluster.get(field) and hasattr(cluster[field], 'isoformat'):
+                    cluster[field] = cluster[field].isoformat()
+            
+            clusters_list.append(cluster)
         
         return {
             "success": True,
-            "clusters": clusters,
+            "clusters": clusters_list,
             "source": source,
-            "total_count": len(clusters),
+            "total_count": len(clusters_list),
             "timestamp": datetime.now().isoformat()
         }
         
@@ -297,8 +358,12 @@ async def get_trending_topics(
                 "articles_count": cluster.get('articles_count', 0),
                 "keywords": cluster.get('keywords', [])[:5],  # Top 5 keywords
                 "sources": cluster.get('sources', []),
+                "source_counts": cluster.get('source_counts', {}),
                 "facts_count": len(cluster.get('facts', [])),
-                "musings_count": len(cluster.get('musings', []))
+                "musings_count": len(cluster.get('musings', [])),
+                "has_generated_content": bool(cluster.get('generated_article')),
+                "has_image": bool(cluster.get('image_url')),
+                "article_urls_count": len(cluster.get('article_urls', []))
             }
             
             # Add last_updated if available
@@ -322,3 +387,79 @@ async def get_trending_topics(
     except Exception as e:
         logger.error(f"Error getting trending topics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting trending topics: {str(e)}")
+
+@router.get("/cluster/{cluster_id}/full-content")
+async def get_cluster_full_content(cluster_id: str):
+    """Get complete cluster content including all AI-generated text"""
+    try:
+        cluster = cluster_storage.get_cluster_by_id(cluster_id)
+        
+        if not cluster:
+            raise HTTPException(status_code=404, detail=f"Cluster {cluster_id} not found")
+        
+        full_content = {
+            "cluster_id": cluster_id,
+            "cluster_name": cluster.get('cluster_name', ''),
+            "image_url": cluster.get('image_url'),
+            
+            # All facts and musings
+            "facts": cluster.get('facts', []),
+            "musings": cluster.get('musings', []),
+            
+            # AI-generated content
+            "generated_article": cluster.get('generated_article', ''),
+            "factual_summary": cluster.get('factual_summary', ''),
+            "contextual_analysis": cluster.get('contextual_analysis', ''),
+            "context": cluster.get('context', ''),
+            "background": cluster.get('background', ''),
+            
+            # Metadata
+            "keywords": cluster.get('keywords', []),
+            "sources": cluster.get('sources', []),
+            "source_counts": cluster.get('source_counts', {}),
+            "articles_count": cluster.get('articles_count', 0),
+            "article_urls": cluster.get('article_urls', []),
+            "similarity_scores": cluster.get('similarity_scores', []),
+            
+            # Timestamps
+            "created_at": cluster.get('created_at').isoformat() if cluster.get('created_at') else None,
+            "updated_at": cluster.get('updated_at').isoformat() if cluster.get('updated_at') else None
+        }
+        
+        return {
+            "success": True,
+            "cluster": full_content,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving full cluster content: {str(e)}")
+
+@router.get("/daily-digest")
+async def get_daily_digest():
+    """Get top clusters from the last 24 hours formatted as a digest"""
+    clusters = cluster_storage.get_recent_clusters(days_back=1, limit=10)
+    
+    digest_items = []
+    for cluster in clusters:
+        if cluster.get('articles_count', 0) >= 2:  # Only include substantial clusters
+            digest_items.append({
+                "cluster_id": str(cluster.get('_id')),
+                "headline": cluster.get('cluster_name', ''),
+                "article_count": cluster.get('articles_count', 0),
+                "top_sources": cluster.get('sources', [])[:3],
+                "key_facts": cluster.get('facts', [])[:3],
+                "summary": cluster.get('factual_summary', '')[:200] + "..." if cluster.get('factual_summary') else ""
+            })
+    
+    return {
+        "success": True,
+        "digest": {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "total_stories": len(digest_items),
+            "stories": digest_items
+        },
+        "timestamp": datetime.now().isoformat()
+    }

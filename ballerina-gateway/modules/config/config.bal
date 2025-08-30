@@ -31,3 +31,11 @@ public function getNewsCollection() returns mongodb:Collection|error {
     mongodb:Collection newsCollection = check database->getCollection("news");
     return newsCollection;
 }
+
+// Public function to get clusters collection
+
+public function getClustersCollection() returns mongodb:Collection|error {
+    mongodb:Database database = check mongoClient->getDatabase(databaseName);
+    mongodb:Collection clustersCollection = check database->getCollection("clusters");
+    return clustersCollection;
+}

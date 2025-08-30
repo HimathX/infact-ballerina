@@ -1,11 +1,21 @@
 import google.generativeai as genai
 from typing import List, Dict, Any
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AIGenerator:
     def __init__(self):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel('gemini-pro')
+        api_key = "AIzaSyC24Tl1deS5-EuauSolF_4BivH52Z6wBSs"
+        if not api_key:
+            logger.error("GEMINI_API_KEY not found in environment variables")
+            raise ValueError("GEMINI_API_KEY is required")
+        
+        genai.configure(api_key=api_key) # type: ignore
+        # Updated to use Gemini 2.0 Flash model
+        self.model = genai.GenerativeModel('gemini-2.0-flash') # type: ignore
+        logger.info("AI Generator initialized successfully with Gemini 2.0 Flash")
     
     async def generate_factual_summary(
         self, 
@@ -30,8 +40,10 @@ class AIGenerator:
         
         try:
             response = self.model.generate_content(prompt)
+            logger.info(f"Successfully generated factual summary for: {cluster_name}")
             return response.text
         except Exception as e:
+            logger.error(f"Error generating factual summary for {cluster_name}: {str(e)}")
             return f"Error generating factual summary: {str(e)}"
     
     async def generate_contextual_analysis(
@@ -64,8 +76,10 @@ class AIGenerator:
         
         try:
             response = self.model.generate_content(prompt)
+            logger.info(f"Successfully generated contextual analysis for: {cluster_name}")
             return response.text
         except Exception as e:
+            logger.error(f"Error generating contextual analysis for {cluster_name}: {str(e)}")
             return f"Error generating contextual analysis: {str(e)}"
     
     async def generate_comprehensive_article(
@@ -109,8 +123,10 @@ class AIGenerator:
         
         try:
             response = self.model.generate_content(prompt)
+            logger.info(f"Successfully generated comprehensive article for: {cluster_name}")
             return response.text
         except Exception as e:
+            logger.error(f"Error generating comprehensive article for {cluster_name}: {str(e)}")
             return f"Error generating comprehensive article: {str(e)}"
     
     async def generate_context_paragraph(
@@ -140,8 +156,10 @@ class AIGenerator:
         
         try:
             response = self.model.generate_content(prompt)
+            logger.info(f"Successfully generated context paragraph for: {cluster_name}")
             return response.text.strip()
         except Exception as e:
+            logger.error(f"Error generating context paragraph for {cluster_name}: {str(e)}")
             return f"Error generating context paragraph: {str(e)}"
     
     async def generate_background_paragraph(
@@ -171,6 +189,18 @@ class AIGenerator:
         
         try:
             response = self.model.generate_content(prompt)
+            logger.info(f"Successfully generated background paragraph for: {cluster_name}")
             return response.text.strip()
         except Exception as e:
+            logger.error(f"Error generating background paragraph for {cluster_name}: {str(e)}")
             return f"Error generating background paragraph: {str(e)}"
+
+    def test_api_connection(self) -> bool:
+        """Test if the API connection is working"""
+        try:
+            response = self.model.generate_content("Hello, can you respond with 'API working'?")
+            logger.info("API connection test successful")
+            return True
+        except Exception as e:
+            logger.error(f"API connection test failed: {str(e)}")
+            return False

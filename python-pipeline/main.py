@@ -57,7 +57,7 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs"
     }
-
+ 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app", 

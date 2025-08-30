@@ -10,9 +10,23 @@ configurable string newsApiKey = "72b8758ce89d4c7e8c6ae949aca9224b";
 // HTTP client for News API
 http:Client newsHttpClient = check new ("https://newsapi.org/v2");
 
-// HTTP client for RSS extraction service with increased timeout
+// HTTP client for RSS extraction service with proper timeout configuration
 http:Client rssExtractionClient = check new ("http://127.0.0.1:8091", {
-    timeout: 300.0  // 5 minutes timeout for RSS extraction
+    timeout: 600.0,  // 10 minutes timeout for RSS extraction
+    poolConfig: {
+        maxActiveConnections: 5,
+        maxIdleConnections: 5,
+        maxActiveStreamsPerConnection: 10
+    },
+    retryConfig: {
+        count: 2,
+        backOffFactor: 2.0
+    },
+    responseLimits: {
+        maxStatusLineLength: 4096,
+        maxHeaderSize: 8192,
+        maxEntityBodySize: 52428800  // 50MB for large RSS responses
+    }
 });
 
 // Public function to get RSS extraction client
@@ -124,16 +138,20 @@ public function processManualFeedArticles(json[] articleArray) returns types:Man
     };
 }
 
-// Call RSS extraction service with proper error handling
+// Call RSS extraction service with comprehensive error handling and timeout management
 public function callRssExtractionService(json requestBody) returns json|error {
     http:Client rssClient = getRssExtractionClient();
     
-    // Try to call the RSS extraction service
-    json|error extractionResponse = rssClient->post("/extract", requestBody, headers = {"Content-Type": "application/json"});
+    // Try to call the RSS extraction service with proper headers
+    json|error extractionResponse = rssClient->post("/extract", requestBody, headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Connection": "keep-alive"
+    });
     
     if extractionResponse is error {
         io:println("Error calling RSS extraction service: " + extractionResponse.message());
-        return error("RSS extraction service is unavailable. Please ensure the service is running on http://127.0.0.1:8091");
+        return error("RSS extraction service is unavailable. Please ensure the service is running on http://127.0.0.1:8091. Error: " + extractionResponse.message());
     }
     
     return extractionResponse;

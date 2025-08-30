@@ -139,21 +139,42 @@ class ClusterStorageManager:
             
             # Create cluster document
             article_urls = [article.url for article in articles if article.url]
+            
+            # Handle embedding conversion safely
+            if embedding is not None:
+                if isinstance(embedding, np.ndarray):
+                    # It's a numpy array
+                    embedding_list = embedding.tolist()
+                elif isinstance(embedding, list):
+                    # It's already a list
+                    embedding_list = embedding
+                else:
+                    # Convert to list if it's another type
+                    embedding_list = list(embedding) if embedding is not None else []
+            else:
+                embedding_list = []
+            
             cluster_doc = {
+                "_id": ObjectId(),
                 "cluster_name": cluster_result.cluster_name,
-                "keywords": keywords,
                 "facts": cluster_result.facts,
                 "musings": cluster_result.musings,
                 "generated_article": cluster_result.generated_article,
-                "articles_count": len(articles),
-                "sources": sources,
-                "embedding": embedding,
+                "factual_summary": cluster_result.factual_summary,
+                "contextual_analysis": cluster_result.contextual_analysis,
+                "context": cluster_result.context,
+                "background": cluster_result.background,
+                "image_url": cluster_result.image_url,
+                "articles_count": cluster_result.articles_count,
+                "sources": cluster_result.sources,
+                "article_urls": cluster_result.article_urls,
+                "article_ids": article_ids,
+                "keywords": keywords,
+                "embedding": embedding_list,  # Use the safely converted embedding
                 "similarity_scores": cluster_result.similarity_scores,
                 "created_at": datetime.now(),
                 "updated_at": datetime.now(),
-                "article_ids": article_ids,
-                "article_urls": article_urls,
-                "cluster_id": cluster_result.cluster_id
+                "source_counts": cluster_result.source_counts
             }
             
             result = self.clusters_collection.insert_one(cluster_doc)
@@ -372,7 +393,7 @@ class ClusterStorageManager:
                     len(cluster_embedding) == len(new_cluster_embedding)):
                     try:
                         embedding_similarity = cosine_similarity(
-                            [new_cluster_embedding], [cluster_embedding]
+                            np.array([new_cluster_embedding]), np.array([cluster_embedding])
                         )[0][0]
                         similarity_score += embedding_similarity * 0.6
                     except:

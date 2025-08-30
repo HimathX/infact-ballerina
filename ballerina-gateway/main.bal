@@ -3,8 +3,90 @@ import ballerina/log;
 import ballerina_gateway.utils;
 import ballerina_gateway.types;
 
-// News extraction service
-service /news on new http:Listener(9090) {
+// News extraction service with comprehensive timeout configuration
+service /news on new http:Listener(9090, {
+    timeout: 900,  // 15 minutes timeout for the listener
+    requestLimits: {
+        maxUriLength: 4096,
+        maxHeaderSize: 8192,
+        maxEntityBodySize: 10485760  // 10MB
+    }
+}) {
+    
+    resource function post process\-with\-storage(@http:Payload types:ArticleProcessingRequest request) returns types:ArticleProcessingResponse|types:ClusterProcessingErrorResponse {
+        do {
+            // Validate request
+            types:ClusterProcessingErrorResponse? validationError = utils:validateArticleProcessingRequest(request);
+            if validationError is types:ClusterProcessingErrorResponse {
+                return validationError;
+            }
+            
+            // Forward request to Python service
+            types:ArticleProcessingResponse|types:ClusterProcessingErrorResponse|error result = utils:forwardArticleProcessingRequest(request);
+            if result is error {
+                types:ClusterProcessingErrorResponse errorResponse = {
+                    success: false,
+                    message: "Internal server error during article processing",
+                    error_code: "INTERNAL_ERROR",
+                    task_id: ()
+                };
+                return errorResponse;
+            }
+            return result;
+            
+        } on fail error e {
+            log:printError("Error in article processing", 'error = e);
+            types:ClusterProcessingErrorResponse errorResponse = {
+                success: false,
+                message: "Internal server error during article processing",
+                error_code: "INTERNAL_ERROR",
+                task_id: ()
+            };
+            return errorResponse;
+        }
+    }
+    
+    // Auto processing endpoint
+    resource function post scrape\-process\-store(int? n_clusters = (), boolean? force_new_clusters = (), int? days_back = (), int? max_articles = ()) returns types:AutoProcessingResponse|types:ClusterProcessingErrorResponse {
+        do {
+            // Build query parameters
+            types:AutoProcessingQueryParams queryParams = {
+                n_clusters: n_clusters,
+                force_new_clusters: force_new_clusters,
+                days_back: days_back,
+                max_articles: max_articles
+            };
+            
+            // Validate parameters
+            types:ClusterProcessingErrorResponse? validationError = utils:validateAutoProcessingParams(queryParams);
+            if validationError is types:ClusterProcessingErrorResponse {
+                return validationError;
+            }
+            
+            // Forward request to Python service
+            types:AutoProcessingResponse|types:ClusterProcessingErrorResponse|error result = utils:forwardAutoProcessingRequest(queryParams);
+            if result is error {
+                types:ClusterProcessingErrorResponse errorResponse = {
+                    success: false,
+                    message: "Internal server error during auto processing",
+                    error_code: "INTERNAL_ERROR",
+                    task_id: ()
+                };
+                return errorResponse;
+            }
+            return result;
+            
+        } on fail error e {
+            log:printError("Error in auto processing", 'error = e);
+            types:ClusterProcessingErrorResponse errorResponse = {
+                success: false,
+                message: "Internal server error during auto processing",
+                error_code: "INTERNAL_ERROR",
+                task_id: ()
+            };
+            return errorResponse;
+        }
+    }
     
     // Endpoint to fetch articles from News API
     resource function post fetchArticles(http:Caller caller, http:Request request) returns error? {
@@ -38,11 +120,20 @@ service /news on new http:Listener(9090) {
         return response;
     }
 
-    // RSS extraction endpoint - Enhanced version with better error handling
-    resource function post 'rss\-extract(@http:Payload json? payload) returns json|error {
-        if payload is () {
-            return error("Payload is required");
+    // RSS extraction endpoint - Enhanced version with comprehensive timeout handling
+    resource function post 'rss\-extract(http:Caller caller, http:Request request) returns error? {
+        json|error payloadResult = request.getJsonPayload();
+        if payloadResult is error {
+            json errorResponse = {
+                "status": "error",
+                "message": "Invalid JSON payload",
+                "error_code": "INVALID_PAYLOAD"
+            };
+            check caller->respond(errorResponse);
+            return;
         }
+        
+        json payload = payloadResult;
 
         // Extract fields from JSON payload with defaults
         string fromDate = utils:extractStringField(payload, "from_date") ?: "2025-08-22";
@@ -68,40 +159,20 @@ service /news on new http:Listener(9090) {
             "min_content_length": minContentLength
         };
         
-        // Call RSS extraction service with proper error handling
-        json|error extractionResponse = utils:callRssExtractionService(requestBody);
+        // Send immediate acknowledgment to client
+        json acknowledgmentResponse = {
+            "status": "processing",
+            "message": "RSS extraction started. This may take several minutes.",
+            "request_params": {
+                "from_date": fromDate,
+                "to_date": toDate,
+                "max_articles": maxArticles
+            }
+        };
+        check caller->respond(acknowledgmentResponse);
         
-        if extractionResponse is error {
-            return {
-                "status": "error",
-                "message": extractionResponse.message(),
-                "error_code": "RSS_SERVICE_UNAVAILABLE"
-            };
-        }
-        
-        // Convert response to article array
-        json[]|error articleArray = extractionResponse.ensureType();
-        
-        if articleArray is error {
-            return {
-                "status": "error",
-                "message": "Invalid response format from RSS extraction service",
-                "error_code": "INVALID_RESPONSE_FORMAT"
-            };
-        }
-        
-        // Process articles with duplicate checking
-        types:ManualFeedResponse|error response = utils:processRssExtractedArticles(articleArray);
-        
-        if response is error {
-            return {
-                "status": "error",
-                "message": "Failed to process extracted articles: " + response.message(),
-                "error_code": "PROCESSING_ERROR"
-            };
-        }
-        
-        return response;
+        // Process RSS extraction in background (fire and forget)
+        _ = start processRssExtractionAsync(requestBody);
     }
 
         // Get all articles endpoint
@@ -278,4 +349,32 @@ service /news on new http:Listener(9090) {
         
         return result;
     }
+}
+
+// Async function to process RSS extraction without blocking the main thread
+function processRssExtractionAsync(json requestBody) {
+    json|error extractionResponse = utils:callRssExtractionService(requestBody);
+    
+    if extractionResponse is error {
+        log:printError("RSS extraction failed", extractionResponse);
+        return;
+    }
+    
+    // Convert response to article array
+    json[]|error articleArray = extractionResponse.ensureType();
+    
+    if articleArray is error {
+        log:printError("Invalid response format from RSS extraction service", articleArray);
+        return;
+    }
+    
+    // Process articles with duplicate checking
+    types:ManualFeedResponse|error response = utils:processRssExtractedArticles(articleArray);
+    
+    if response is error {
+        log:printError("Failed to process extracted articles", response);
+        return;
+    }
+    
+    log:printInfo("RSS extraction completed successfully. Inserted: " + response.inserted_count.toString() + ", Skipped: " + response.skipped_count.toString());
 }
