@@ -210,7 +210,6 @@ curl -X POST "http://localhost:8000/api/v1/scrape-process-store?days_back=7"
 - Python Pipeline: `http://localhost:8000/docs` (Interactive Swagger UI)
 
 --
---
 
 ## 🛠️ Tech Stack
 
@@ -304,7 +303,6 @@ curl -X POST "http://localhost:9090/news/scrape-process-store?max_articles=5"
 - **Python**: GPU acceleration, batch processing, caching
 - **MongoDB**: Proper indexing, sharding for scale
 
----
 
 ```
 
@@ -340,17 +338,6 @@ This project was built by an awesome team from the **University of Moratuwa, Sri
 - **🎨 Frontend Wizard**: [codevector-2003](https://github.com/codevector-2003) (Haren Daishika) – React interface & user experience  
 - **🧠 AI/ML Engineer**: [LazySeaHorse](https://github.com/LazySeaHorse) (Raj Pankaja) – NLP pipeline & AI processing
 
-*Built with ❤️ (and a bit of caffeine) by the InFact Team. Stay factual, folks!* 🚀
-
----
-
-## 📊 Performance Metrics
-
-- **Processing Speed**: ~50 articles/minute (CPU), ~200 articles/minute (GPU)
-- **Clustering Quality**: 0.89 silhouette score average
-- **API Response Time**: <2s for 95% of requests
-- **Gateway Throughput**: 1000+ concurrent requests
-
 ---
 
 ## 📄 License
@@ -360,8 +347,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**⭐ Star this project if it helps you combat misinformation! ⭐**
 
-*Transform sensationalized news into factual, neutral reporting through advanced AI and NLP techniques*
+*Built with ❤️ (and a bit of caffeine) by the InFact Team. Stay factual, folks!* 🚀
 
 </div>
