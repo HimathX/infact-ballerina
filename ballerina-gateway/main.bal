@@ -1,8 +1,8 @@
+import ballerina/http;
+import ballerina/log;
 import ballerina_gateway.types;
 import ballerina_gateway.utils;
 
-import ballerina/http;
-import ballerina/log;
 
 // News extraction service with comprehensive timeout configuration
 service /news on new http:Listener(9090, {
