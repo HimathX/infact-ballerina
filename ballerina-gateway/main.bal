@@ -1,4 +1,3 @@
-import ballerinax/wso2.controlplane as _;
 import ballerina/http;
 import ballerina/log;
 import ballerina_gateway.utils;
