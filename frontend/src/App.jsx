@@ -5,6 +5,7 @@ import TabStrip from './components/TabStrip'
 import Feed from './components/Feed'
 import ArticleView from './components/ArticleView'
 import Modal from './components/Modal'
+import AdminPanel from './components/AdminPanel'
 
 function App() {
   const [activeTab, setActiveTab] = useState('Trending')
@@ -12,6 +13,7 @@ function App() {
   const [theme, setTheme] = useState('light')
   const [showAboutModal, setShowAboutModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [preferences, setPreferences] = useState({
     reduceMotion: false,
     compact: false
@@ -76,6 +78,26 @@ function App() {
         onTabChange={setActiveTab}
       />
 
+      {/* Admin Panel Toggle - Press Ctrl+Shift+A */}
+      {window.location.search.includes('admin') && (
+        <div style={{ position: 'fixed', top: '10px', right: '10px', zIndex: 999 }}>
+          <button
+            onClick={() => setShowAdminPanel(true)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Admin Panel
+          </button>
+        </div>
+      )}
+
       <main className="page">
         {currentArticle ? (
           <ArticleView
@@ -126,6 +148,11 @@ function App() {
           </label>
         </div>
       </Modal>
+
+      {/* Admin Panel */}
+      {showAdminPanel && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   )
 }

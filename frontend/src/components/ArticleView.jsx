@@ -1,13 +1,53 @@
-import { useState } from 'react'
-import { articles } from '../data'
+import { useState, useEffect } from 'react'
+import { fetchArticleById } from '../utils'
 import Expander from './Expander'
 import SourcesList from './SourcesList'
 
 const ArticleView = ({ articleId, onBack, preferences }) => {
-    const article = articles.find(a => a.id === articleId)
+    const [article, setArticle] = useState(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const loadArticle = async () => {
+            setLoading(true)
+            try {
+                const fetchedArticle = await fetchArticleById(articleId)
+                setArticle(fetchedArticle)
+            } catch (error) {
+                console.error('Error loading article:', error)
+            }
+            setLoading(false)
+        }
+
+        if (articleId) {
+            loadArticle()
+        }
+    }, [articleId])
+
+    if (loading) {
+        return (
+            <div style={{
+                padding: '60px 24px',
+                textAlign: 'center',
+                color: 'var(--muted)',
+                fontSize: '14px'
+            }}>
+                Loading article...
+            </div>
+        )
+    }
 
     if (!article) {
-        return <div>Article not found</div>
+        return (
+            <div style={{
+                padding: '60px 24px',
+                textAlign: 'center',
+                color: 'var(--muted)',
+                fontSize: '14px'
+            }}>
+                Article not found
+            </div>
+        )
     }
 
     return (
@@ -24,20 +64,29 @@ const ArticleView = ({ articleId, onBack, preferences }) => {
                     <div className="keyfacts">
                         <h3>Key Facts</h3>
                         <ul>
-                            {article.bullets.map((bullet, index) => (
+                            {(article.bullets || article.key_points || []).map((bullet, index) => (
                                 <li key={index}>{bullet}</li>
                             ))}
                         </ul>
                     </div>
 
                     <div className="article-content">
-                        {article.content.map((paragraph, index) => (
+                        {(article.content || []).map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>
                         ))}
                     </div>
 
+                    {article.url && (
+                        <div className="original-source">
+                            <h4>Original Article</h4>
+                            <a href={article.url} target="_blank" rel="noopener noreferrer">
+                                {article.url}
+                            </a>
+                        </div>
+                    )}
+
                     <div className="coverage">
-                        Coverage Completeness: {article.coverage}
+                        Coverage Completeness: {article.coverage || 'Unknown'}
                     </div>
                 </article>
 
@@ -45,19 +94,19 @@ const ArticleView = ({ articleId, onBack, preferences }) => {
                     <Expander
                         id="context"
                         title="Context"
-                        content={article.context}
+                        content={article.context || ''}
                         preferences={preferences}
                     />
 
                     <Expander
                         id="background"
                         title="Background"
-                        content={article.background}
+                        content={article.background || ''}
                         preferences={preferences}
                     />
 
                     <h4 className="block-title">Original Sources</h4>
-                    <SourcesList sources={article.sources} />
+                    <SourcesList sources={article.sources || []} />
                 </aside>
             </div>
         </section>

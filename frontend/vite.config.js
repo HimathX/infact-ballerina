@@ -7,4 +7,13 @@ export default defineConfig({
   plugins: [react(),
   tailwindcss()
   ],
+  server: {
+    proxy: {
+      '/news': {
+        target: 'http://localhost:9090',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })
