@@ -33,8 +33,9 @@ export function formatFetchedTime() {
     return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())} UTC`
 }
 
-// API functions to connect to Ballerina backend
-const API_BASE = '/news'
+// API functions to connect to Ballerina backend and Python pipeline
+const API_BASE = '/news'  // Ballerina backend (port 9090)
+const PYTHON_API_BASE = '/api/v1'  // Python FastAPI service (port 8000)
 
 export async function fetchArticles(limit = 20, skip = 0) {
     try {
@@ -51,13 +52,47 @@ export async function fetchArticles(limit = 20, skip = 0) {
 export async function fetchArticleById(id) {
     try {
         console.log('Fetching article by ID from:', `${API_BASE}/${id}`)
-        const response = await fetch(`${API_BASE}/${id}`)
-        if (!response.ok) throw new Error(`Failed to fetch article: ${response.status}`)
-        const data = await response.json()
-        console.log('Article by ID response:', data)
-        return data.article || data.data
+
+        // First try as an individual article
+        let response = await fetch(`${API_BASE}/${id}`)
+        if (response.ok) {
+            const data = await response.json()
+            console.log('Individual article response:', data)
+            return data.article || data.data
+        }
+
+        // If not found, try as a cluster
+        console.log('Article not found, trying as cluster:', `${API_BASE}/clusters/${id}`)
+        response = await fetch(`${API_BASE}/clusters/${id}`)
+        if (response.ok) {
+            const data = await response.json()
+            console.log('Cluster response:', data)
+            const cluster = data.cluster || data.data
+
+            // Transform cluster data to look like an article for the ArticleView component
+            if (cluster) {
+                return {
+                    _id: cluster._id,
+                    title: cluster.cluster_name || 'Untitled Cluster',
+                    content: cluster.generated_article || cluster.factual_summary || '',
+                    bullets: cluster.facts || [],
+                    key_points: cluster.facts || [],
+                    context: cluster.context || '',
+                    background: cluster.background || '',
+                    coverage: 'Cluster Analysis',
+                    sources: cluster.sources || [],
+                    url: null, // Clusters don't have original URLs
+                    published_at: cluster.created_at || cluster.updated_at,
+                    articles_count: cluster.articles_count || 0,
+                    article_urls: cluster.article_urls || [],
+                    source_counts: cluster.source_counts || {}
+                }
+            }
+        }
+
+        throw new Error(`Neither article nor cluster found for ID: ${id}`)
     } catch (error) {
-        console.error('Error fetching article by ID:', error)
+        console.error('Error fetching article/cluster by ID:', error)
         return null
     }
 }
@@ -102,18 +137,23 @@ export async function fetchRecentArticles(limit = 20, daysBack = 7) {
     }
 }
 
-export async function searchClusters(query, limit = 20) {
+export async function searchClusters(query, limit = 20, sources = [], keywords = []) {
     try {
         const response = await fetch(`${API_BASE}/search`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query, limit })
+            body: JSON.stringify({
+                query,
+                limit,
+                sources,
+                keywords
+            })
         })
         if (!response.ok) throw new Error('Failed to search clusters')
         const data = await response.json()
-        return data.data || []
+        return data.clusters || data.data || []
     } catch (error) {
         console.error('Error searching clusters:', error)
         return []
@@ -324,5 +364,290 @@ export function transformArticleData(item) {
         context: item.context || '',
         background: item.background || '',
         coverage: item.coverage || 'Medium'
+    }
+}
+
+// =================== ADDITIONAL API ENDPOINTS FROM PYTHON PIPELINE ===================
+
+// Daily digest endpoint
+export async function getDailyDigest() {
+    try {
+        console.log('Fetching daily digest from:', `${PYTHON_API_BASE}/daily-digest`)
+        const response = await fetch(`${PYTHON_API_BASE}/daily-digest`)
+        if (!response.ok) throw new Error(`Failed to fetch daily digest: ${response.status}`)
+        const data = await response.json()
+        console.log('Daily digest response:', data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error('Error fetching daily digest:', error)
+        return []
+    }
+}
+
+// Cluster statistics endpoint
+export async function getClusterStats() {
+    try {
+        console.log('Fetching cluster stats from:', `${PYTHON_API_BASE}/clusters/stats`)
+        const response = await fetch(`${PYTHON_API_BASE}/clusters/stats`)
+        if (!response.ok) throw new Error(`Failed to fetch cluster stats: ${response.status}`)
+        const data = await response.json()
+        console.log('Cluster stats response:', data)
+        return data
+    } catch (error) {
+        console.error('Error fetching cluster stats:', error)
+        return null
+    }
+}
+
+// Advanced cluster search with additional parameters
+export async function searchClustersAdvanced(searchParams) {
+    try {
+        console.log('Advanced cluster search:', `${PYTHON_API_BASE}/clusters/search`)
+        const response = await fetch(`${PYTHON_API_BASE}/clusters/search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(searchParams)
+        })
+        if (!response.ok) throw new Error(`Failed to search clusters: ${response.status}`)
+        const data = await response.json()
+        console.log('Advanced search response:', data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error('Error in advanced cluster search:', error)
+        return []
+    }
+}
+
+// Get trending topics with Python API
+export async function getTrendingTopicsPython(daysBack = 7, minArticles = 3) {
+    try {
+        console.log('Fetching trending topics from Python API:', `${PYTHON_API_BASE}/clusters/trending-topics?days_back=${daysBack}&min_articles=${minArticles}`)
+        const response = await fetch(`${PYTHON_API_BASE}/clusters/trending-topics?days_back=${daysBack}&min_articles=${minArticles}`)
+        if (!response.ok) throw new Error(`Failed to fetch trending topics: ${response.status}`)
+        const data = await response.json()
+        console.log('Python trending topics response:', data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error('Error fetching trending topics from Python API:', error)
+        return []
+    }
+}
+
+// Get recent clusters from Python API
+export async function getRecentClusters(daysBack = 3, limit = 20) {
+    try {
+        console.log('Fetching recent clusters from Python API:', `${PYTHON_API_BASE}/clusters/recent?days_back=${daysBack}&limit=${limit}`)
+        const response = await fetch(`${PYTHON_API_BASE}/clusters/recent?days_back=${daysBack}&limit=${limit}`)
+        if (!response.ok) throw new Error(`Failed to fetch recent clusters: ${response.status}`)
+        const data = await response.json()
+        console.log('Recent clusters response:', data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error('Error fetching recent clusters:', error)
+        return []
+    }
+}
+
+// Process articles with storage (main processing pipeline)
+export async function processArticlesWithStoragePython(processingRequest) {
+    try {
+        console.log('Processing articles with Python pipeline:', `${PYTHON_API_BASE}/process-with-storage`)
+        const response = await fetch(`${PYTHON_API_BASE}/process-with-storage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(processingRequest)
+        })
+        if (!response.ok) throw new Error(`Failed to process articles: ${response.status}`)
+        const data = await response.json()
+        console.log('Python process articles response:', data)
+        return data
+    } catch (error) {
+        console.error('Error processing articles with Python pipeline:', error)
+        return null
+    }
+}
+
+// Automated scrape-process-store pipeline
+export async function scrapeProcessStorePython(daysBack = 7, maxArticles = 100) {
+    try {
+        console.log('Auto scrape-process-store with Python:', `${PYTHON_API_BASE}/scrape-process-store?days_back=${daysBack}&max_articles=${maxArticles}`)
+        const response = await fetch(`${PYTHON_API_BASE}/scrape-process-store?days_back=${daysBack}&max_articles=${maxArticles}`, {
+            method: 'POST'
+        })
+        if (!response.ok) throw new Error(`Failed to scrape-process-store: ${response.status}`)
+        const data = await response.json()
+        console.log('Python scrape-process-store response:', data)
+        return data
+    } catch (error) {
+        console.error('Error in Python scrape-process-store:', error)
+        return null
+    }
+}
+
+// Get system health status
+export async function getSystemHealth() {
+    try {
+        console.log('Checking system health:', '/health')
+        const response = await fetch('/health')
+        if (!response.ok) throw new Error(`Health check failed: ${response.status}`)
+        const data = await response.json()
+        console.log('System health response:', data)
+        return data
+    } catch (error) {
+        console.error('Error checking system health:', error)
+        return null
+    }
+}
+
+// Enhanced search with filters and pagination
+export async function searchWithFilters(query, filters = {}) {
+    try {
+        const searchParams = {
+            query,
+            limit: filters.limit || 20,
+            sources: filters.sources || [],
+            keywords: filters.keywords || [],
+            date_from: filters.dateFrom,
+            date_to: filters.dateTo,
+            min_articles: filters.minArticles,
+            sort_by: filters.sortBy || 'created_at',
+            sort_order: filters.sortOrder || -1
+        }
+
+        console.log('Enhanced search with filters:', searchParams)
+        const response = await fetch(`${API_BASE}/search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(searchParams)
+        })
+        if (!response.ok) throw new Error(`Search failed: ${response.status}`)
+        const data = await response.json()
+        console.log('Enhanced search response:', data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error('Error in enhanced search:', error)
+        return []
+    }
+}
+
+// Get cluster analytics
+export async function getClusterAnalytics(clusterId) {
+    try {
+        console.log('Fetching cluster analytics:', `${API_BASE}/clusters/${clusterId}/analytics`)
+        const response = await fetch(`${API_BASE}/clusters/${clusterId}/analytics`)
+        if (!response.ok) throw new Error(`Failed to fetch cluster analytics: ${response.status}`)
+        const data = await response.json()
+        console.log('Cluster analytics response:', data)
+        return data
+    } catch (error) {
+        console.error('Error fetching cluster analytics:', error)
+        return null
+    }
+}
+
+// Export cluster data
+export async function exportClusterData(clusterId, format = 'json') {
+    try {
+        console.log('Exporting cluster data:', `${API_BASE}/clusters/${clusterId}/export?format=${format}`)
+        const response = await fetch(`${API_BASE}/clusters/${clusterId}/export?format=${format}`)
+        if (!response.ok) throw new Error(`Failed to export cluster data: ${response.status}`)
+
+        if (format === 'json') {
+            const data = await response.json()
+            return data
+        } else {
+            const blob = await response.blob()
+            return blob
+        }
+    } catch (error) {
+        console.error('Error exporting cluster data:', error)
+        return null
+    }
+}
+
+// Bulk operations
+export async function bulkDeleteArticles(articleIds) {
+    try {
+        console.log('Bulk deleting articles:', `${API_BASE}/articles/bulk-delete`)
+        const response = await fetch(`${API_BASE}/articles/bulk-delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ article_ids: articleIds })
+        })
+        if (!response.ok) throw new Error(`Failed to bulk delete articles: ${response.status}`)
+        const data = await response.json()
+        console.log('Bulk delete response:', data)
+        return data
+    } catch (error) {
+        console.error('Error in bulk delete:', error)
+        return null
+    }
+}
+
+// Advanced filtering for feed
+export async function getFilteredContent(tab, filters = {}) {
+    try {
+        let endpoint
+        let params = {}
+
+        switch (tab.toLowerCase()) {
+            case 'trending':
+                endpoint = 'trending-topics'
+                params = {
+                    days_back: filters.daysBack || 7,
+                    min_articles: filters.minArticles || 3
+                }
+                break
+            case 'recent':
+                endpoint = 'recent'
+                params = {
+                    limit: filters.limit || 20,
+                    days_back: filters.daysBack || 7
+                }
+                break
+            case 'international':
+                return await searchWithFilters('international global world foreign', filters)
+            case 'local':
+                return await searchWithFilters('local city state regional domestic', filters)
+            case 'technology':
+                return await searchWithFilters('technology tech innovation digital AI', filters)
+            case 'business':
+                return await searchWithFilters('business finance economy market', filters)
+            case 'politics':
+                return await searchWithFilters('politics government policy election', filters)
+            case 'health':
+                return await searchWithFilters('health medical healthcare medicine', filters)
+            case 'science':
+                return await searchWithFilters('science research study discovery', filters)
+            case 'sports':
+                return await searchWithFilters('sports game match tournament', filters)
+            default:
+                endpoint = 'allClusters'
+                params = {
+                    limit: filters.limit || 50,
+                    skip: filters.skip || 0
+                }
+        }
+
+        const queryString = new URLSearchParams(params).toString()
+        const url = `${API_BASE}/${endpoint}${queryString ? '?' + queryString : ''}`
+
+        console.log(`Fetching filtered content for ${tab}:`, url)
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`Failed to fetch ${tab} content: ${response.status}`)
+        const data = await response.json()
+        console.log(`${tab} content response:`, data)
+        return data.clusters || data.data || []
+    } catch (error) {
+        console.error(`Error fetching ${tab} content:`, error)
+        return []
     }
 }

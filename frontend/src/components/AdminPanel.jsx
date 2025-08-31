@@ -8,7 +8,17 @@ import {
     scrapeProcessStore,
     processArticlesWithStorage,
     getWeeklyDigest,
-    deleteArticle
+    deleteArticle,
+    // New API functions
+    getDailyDigest,
+    getClusterStats,
+    getTrendingTopicsPython,
+    getRecentClusters,
+    processArticlesWithStoragePython,
+    scrapeProcessStorePython,
+    getSystemHealth,
+    searchWithFilters,
+    getClusterAnalytics
 } from '../utils'
 
 const AdminPanel = ({ onClose }) => {
@@ -31,8 +41,12 @@ const AdminPanel = ({ onClose }) => {
 
     const sections = {
         stats: {
-            title: 'Statistics',
+            title: 'Statistics & Health',
             actions: [
+                {
+                    name: 'Get System Health',
+                    action: () => handleApiCall(getSystemHealth)
+                },
                 {
                     name: 'Get Article Stats',
                     action: () => handleApiCall(getArticleStats)
@@ -40,6 +54,60 @@ const AdminPanel = ({ onClose }) => {
                 {
                     name: 'Get Article Count',
                     action: () => handleApiCall(getArticleCount)
+                },
+                {
+                    name: 'Get Cluster Stats',
+                    action: () => handleApiCall(getClusterStats)
+                }
+            ]
+        },
+        digest: {
+            title: 'Content Digest',
+            actions: [
+                {
+                    name: 'Get Daily Digest',
+                    action: () => handleApiCall(getDailyDigest)
+                },
+                {
+                    name: 'Get Weekly Digest',
+                    action: () => handleApiCall(getWeeklyDigest)
+                },
+                {
+                    name: 'Get Recent Clusters',
+                    action: () => handleApiCall(getRecentClusters, 3, 20)
+                },
+                {
+                    name: 'Get Trending (Python API)',
+                    action: () => handleApiCall(getTrendingTopicsPython, 7, 3)
+                }
+            ]
+        },
+        search: {
+            title: 'Advanced Search',
+            actions: [
+                {
+                    name: 'Search Technology News',
+                    action: () => handleApiCall(searchWithFilters, 'technology AI innovation', {
+                        limit: 10,
+                        sources: [],
+                        keywords: ['tech', 'innovation', 'AI']
+                    })
+                },
+                {
+                    name: 'Search Business News',
+                    action: () => handleApiCall(searchWithFilters, 'business finance market', {
+                        limit: 10,
+                        sources: [],
+                        keywords: ['business', 'finance', 'economy']
+                    })
+                },
+                {
+                    name: 'Search International News',
+                    action: () => handleApiCall(searchWithFilters, 'international global world', {
+                        limit: 10,
+                        sources: [],
+                        keywords: ['international', 'global', 'world']
+                    })
                 }
             ]
         },
@@ -76,12 +144,27 @@ const AdminPanel = ({ onClose }) => {
             title: 'Article Processing',
             actions: [
                 {
-                    name: 'Auto Scrape & Process',
+                    name: 'Auto Scrape & Process (Ballerina)',
                     action: () => handleApiCall(scrapeProcessStore, 5, false, 7, 20)
                 },
                 {
-                    name: 'Get Weekly Digest',
-                    action: () => handleApiCall(getWeeklyDigest)
+                    name: 'Auto Scrape & Process (Python)',
+                    action: () => handleApiCall(scrapeProcessStorePython, 7, 50)
+                },
+                {
+                    name: 'Process Sample Articles (Python)',
+                    action: () => handleApiCall(processArticlesWithStoragePython, {
+                        articles: [
+                            {
+                                title: 'Sample AI Article',
+                                content: 'This is a sample article about artificial intelligence developments.',
+                                source: 'TechNews',
+                                url: 'https://example.com/ai-article'
+                            }
+                        ],
+                        n_clusters: 3,
+                        store_clusters: true
+                    })
                 }
             ]
         },

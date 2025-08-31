@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { fetchTrendingTopics, fetchRecentArticles, fetchAllClusters, searchClusters, transformArticleData } from '../utils'
+import { getFilteredContent, transformArticleData } from '../utils'
 import NewsCard from './NewsCard'
 import FeedSidebar from './FeedSidebar'
 
 const Feed = ({ activeTab, onArticleClick, preferences }) => {
     const [articles, setArticles] = useState([])
-    const [filteredArticles, setFilteredArticles] = useState([])
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [loading, setLoading] = useState(true)
 
@@ -13,28 +12,16 @@ const Feed = ({ activeTab, onArticleClick, preferences }) => {
     useEffect(() => {
         const loadContent = async () => {
             setLoading(true)
+            setIsTransitioning(true)
             try {
-                let fetchedData = []
+                // Use the new enhanced filtering function
+                const fetchedData = await getFilteredContent(activeTab, {
+                    limit: 50,
+                    daysBack: 7,
+                    minArticles: 3
+                })
 
-                switch (activeTab) {
-                    case 'Trending':
-                        fetchedData = await fetchTrendingTopics(7, 3)
-                        break
-                    case 'All':
-                        fetchedData = await fetchAllClusters(50, 0)
-                        break
-                    case 'International':
-                        fetchedData = await searchClusters('international global world')
-                        break
-                    case 'Local':
-                        fetchedData = await searchClusters('local city state regional')
-                        break
-                    case 'Blindspot':
-                        fetchedData = await fetchRecentArticles(20, 7)
-                        break
-                    default:
-                        fetchedData = await fetchRecentArticles(20, 7)
-                }
+                console.log(`Data fetched for ${activeTab}:`, fetchedData)
 
                 // Transform data to article format
                 const transformedArticles = fetchedData.map(transformArticleData)
@@ -44,28 +31,15 @@ const Feed = ({ activeTab, onArticleClick, preferences }) => {
                 setArticles([])
             }
             setLoading(false)
+
+            // Remove transition after a short delay
+            setTimeout(() => {
+                setIsTransitioning(false)
+            }, 300)
         }
 
         loadContent()
     }, [activeTab])
-
-    useEffect(() => {
-        setIsTransitioning(true)
-
-        setTimeout(() => {
-            // Filter articles based on active tab
-            const filtered = articles.filter(article => {
-                if (activeTab === 'All') return true
-                if (activeTab === 'Trending') return true // All trending articles
-                return article.category && article.category.includes(activeTab)
-            })
-            setFilteredArticles(filtered)
-
-            setTimeout(() => {
-                setIsTransitioning(false)
-            }, 50)
-        }, 150)
-    }, [activeTab, articles])
 
     // Determine featured cards (first and every 4th)
     const featuredIndices = new Set([0, 4, 8])
@@ -79,12 +53,12 @@ const Feed = ({ activeTab, onArticleClick, preferences }) => {
                 color: 'var(--muted)',
                 fontSize: '14px'
             }}>
-                Loading news articles...
+                Loading {activeTab} news...
             </div>
         )
     }
 
-    if (filteredArticles.length === 0) {
+    if (articles.length === 0) {
         return (
             <div className="no-content" style={{
                 padding: '60px 24px',
@@ -100,7 +74,7 @@ const Feed = ({ activeTab, onArticleClick, preferences }) => {
     return (
         <section className="feed" aria-label="News feed">
             <div className={`grid ${isTransitioning ? 'transitioning' : ''}`}>
-                {filteredArticles.map((article, index) => {
+                {articles.map((article, index) => {
                     const isFeatured = featuredIndices.has(index)
                     const isTall = tallIndices.has(index)
 

@@ -70,11 +70,17 @@ const ArticleView = ({ articleId, onBack, preferences }) => {
                         </ul>
                     </div>
 
-                    <div className="article-content">
-                        {(article.content || []).map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
-                        ))}
-                    </div>
+                    {article.content && (
+                        <div className="article-content">
+                            {Array.isArray(article.content) ? (
+                                article.content.map((paragraph, index) => (
+                                    <p key={index}>{paragraph}</p>
+                                ))
+                            ) : (
+                                <div dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br/>') }} />
+                            )}
+                        </div>
+                    )}
 
                     {article.url && (
                         <div className="original-source">
@@ -82,6 +88,24 @@ const ArticleView = ({ articleId, onBack, preferences }) => {
                             <a href={article.url} target="_blank" rel="noopener noreferrer">
                                 {article.url}
                             </a>
+                        </div>
+                    )}
+
+                    {article.article_urls && article.article_urls.length > 0 && (
+                        <div className="cluster-sources">
+                            <h4>Source Articles ({article.articles_count || article.article_urls.length})</h4>
+                            <ul>
+                                {article.article_urls.slice(0, 10).map((url, index) => (
+                                    <li key={index}>
+                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                            {url.length > 80 ? url.substring(0, 80) + '...' : url}
+                                        </a>
+                                    </li>
+                                ))}
+                                {article.article_urls.length > 10 && (
+                                    <li>... and {article.article_urls.length - 10} more articles</li>
+                                )}
+                            </ul>
                         </div>
                     )}
 
@@ -107,6 +131,17 @@ const ArticleView = ({ articleId, onBack, preferences }) => {
 
                     <h4 className="block-title">Original Sources</h4>
                     <SourcesList sources={article.sources || []} />
+
+                    {article.source_counts && Object.keys(article.source_counts).length > 0 && (
+                        <div className="source-stats">
+                            <h4 className="block-title">Source Distribution</h4>
+                            {Object.entries(article.source_counts).map(([source, count]) => (
+                                <div key={source} style={{ marginBottom: '4px', fontSize: '12px' }}>
+                                    <strong>{source}:</strong> {count} article{count !== 1 ? 's' : ''}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </aside>
             </div>
         </section>

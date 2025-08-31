@@ -36,6 +36,17 @@ function App() {
     } catch (e) {
       // ignore
     }
+
+    // Add keyboard shortcut for Admin Panel (Ctrl+Shift+A)
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault()
+        setShowAdminPanel(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
   }, [])
 
   // Apply theme
@@ -78,8 +89,8 @@ function App() {
         onTabChange={setActiveTab}
       />
 
-      {/* Admin Panel Toggle - Press Ctrl+Shift+A */}
-      {window.location.search.includes('admin') && (
+      {/* Admin Panel Toggle - Press Ctrl+Shift+A or add ?admin to URL */}
+      {(window.location.search.includes('admin') || showAdminPanel) && (
         <div style={{ position: 'fixed', top: '10px', right: '10px', zIndex: 999 }}>
           <button
             onClick={() => setShowAdminPanel(true)}
