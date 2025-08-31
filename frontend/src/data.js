@@ -1,9 +1,9 @@
--
 
-    function hoursAgo(h) {
-        const d = new Date(Date.now() - h * 60 * 60 * 1000);
-        return d.toISOString();
-    }
+// Returns an ISO string for the time h hours ago from now
+function hoursAgo(h) {
+    const d = new Date(Date.now() - h * 60 * 60 * 1000);
+    return d.toISOString();
+}
 
 export const articles = [
     {
